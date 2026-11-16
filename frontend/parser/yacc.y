@@ -240,15 +240,6 @@ EXPR_STMT:
     }
     ;
 
-RETURN_STMT:
-    RETURN SEMICOLON {
-        $$ = new ReturnStmt(nullptr, @1.begin.line, @1.begin.column);
-    }
-    | RETURN EXPR SEMICOLON {
-        $$ = new ReturnStmt($2, @1.begin.line, @1.begin.column);
-    }
-    ;
-
 VAR_DECLARATION:
     TYPE VAR_DECLARATOR_LIST {
         $$ = new VarDeclaration($1, $2, false, @1.begin.line, @1.begin.column);

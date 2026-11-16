@@ -1,0 +1,695 @@
+ASTree
+|-- VarDeclStmt
+|   `-- VarDeclaration, BaseType: int
+|       `-- VarDeclarator
+|           |-- Var: 
+|           |   `-- LeftValueExpr GLOBAL_N
+|           `-- Init: 
+|               `-- Initializer
+|                   `-- literal int: 4
+|-- VarDeclStmt
+|   `-- VarDeclaration, BaseType: int
+|       `-- VarDeclarator
+|           |-- Var: 
+|           |   `-- LeftValueExpr global_array
+|           |       |-- literal int: 2
+|           |       `-- literal int: 4
+|           `-- Init: 
+|               `-- InitializerList
+|                   |-- InitializerList
+|                   |   |-- Initializer
+|                   |   |   `-- literal int: 1
+|                   |   |-- Initializer
+|                   |   |   `-- literal int: 2
+|                   |   |-- Initializer
+|                   |   |   `-- literal int: 3
+|                   |   `-- Initializer
+|                   |       `-- literal int: 4
+|                   `-- InitializerList
+|                       |-- Initializer
+|                       |   `-- literal int: 5
+|                       |-- Initializer
+|                       |   `-- literal int: 6
+|                       |-- Initializer
+|                       |   `-- literal int: 7
+|                       `-- Initializer
+|                           `-- literal int: 8
+|-- VarDeclStmt
+|   `-- VarDeclaration, BaseType: float
+|       `-- VarDeclarator
+|           |-- Var: 
+|           |   `-- LeftValueExpr global_float
+|           `-- Init: 
+|               `-- Initializer
+|                   `-- literal float: 1.500000
+|-- FuncDecl empty_function() -> void, line: 10
+|-- FuncDecl return_function() -> void, line: 13
+|   `-- ReturnStmt
+|-- FuncDecl scalar_function(int x, float y) -> int, line: 17
+|   `-- BlockStmt, line: 17
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr result
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- IfStmt
+|       |   |-- Condition:
+|       |   |   `-- BinaryExpr >
+|       |   |       |-- LeftValueExpr x
+|       |   |       `-- literal int: 0
+|       |   |-- Then:
+|       |   |   `-- BlockStmt, line: 20
+|       |   |       `-- ExprStmt line: 21
+|       |   |           `-- BinaryExpr =
+|       |   |               |-- LeftValueExpr result
+|       |   |               `-- LeftValueExpr x
+|       |   `-- Else:
+|       |       `-- BlockStmt, line: 22
+|       |           `-- ExprStmt line: 23
+|       |               `-- BinaryExpr =
+|       |                   |-- LeftValueExpr result
+|       |                   `-- literal int: 1
+|       `-- ReturnStmt
+|           `-- LeftValueExpr result
+|-- FuncDecl vector_function(int a[], int n) -> int, line: 29
+|   `-- BlockStmt, line: 29
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr i
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr sum
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- WhileStmt
+|       |   |-- Condition:
+|       |   |   `-- BinaryExpr <
+|       |   |       |-- LeftValueExpr i
+|       |   |       `-- LeftValueExpr n
+|       |   `-- Body:
+|       |       `-- BlockStmt, line: 33
+|       |           |-- IfStmt
+|       |           |   |-- Condition:
+|       |           |   |   `-- BinaryExpr ==
+|       |           |   |       |-- LeftValueExpr i
+|       |           |   |       `-- literal int: 1
+|       |           |   |-- Then:
+|       |           |   |   `-- BlockStmt, line: 34
+|       |           |   |       |-- ExprStmt line: 35
+|       |           |   |       |   `-- BinaryExpr =
+|       |           |   |       |       |-- LeftValueExpr i
+|       |           |   |       |       `-- BinaryExpr +
+|       |           |   |       |           |-- LeftValueExpr i
+|       |           |   |       |           `-- literal int: 1
+|       |           |   |       `-- ContinueStmt
+|       |           |-- ExprStmt line: 39
+|       |           |   `-- BinaryExpr =
+|       |           |       |-- LeftValueExpr sum
+|       |           |       `-- BinaryExpr +
+|       |           |           |-- LeftValueExpr sum
+|       |           |           `-- LeftValueExpr a
+|       |           |               `-- LeftValueExpr i
+|       |           `-- ExprStmt line: 40
+|       |               `-- BinaryExpr =
+|       |                   |-- LeftValueExpr i
+|       |                   `-- BinaryExpr +
+|       |                       |-- LeftValueExpr i
+|       |                       `-- literal int: 1
+|       `-- ReturnStmt
+|           `-- LeftValueExpr sum
+|-- FuncDecl fixed_array_function(int a[10], int n) -> int, line: 46
+|   `-- BlockStmt, line: 46
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr i
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr sum
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- WhileStmt
+|       |   |-- Condition:
+|       |   |   `-- BinaryExpr <
+|       |   |       |-- LeftValueExpr i
+|       |   |       `-- LeftValueExpr n
+|       |   `-- Body:
+|       |       `-- BlockStmt, line: 50
+|       |           |-- ExprStmt line: 51
+|       |           |   `-- BinaryExpr =
+|       |           |       |-- LeftValueExpr sum
+|       |           |       `-- BinaryExpr +
+|       |           |           |-- LeftValueExpr sum
+|       |           |           `-- LeftValueExpr a
+|       |           |               `-- LeftValueExpr i
+|       |           `-- ExprStmt line: 52
+|       |               `-- BinaryExpr =
+|       |                   |-- LeftValueExpr i
+|       |                   `-- BinaryExpr +
+|       |                       |-- LeftValueExpr i
+|       |                       `-- literal int: 1
+|       `-- ReturnStmt
+|           `-- LeftValueExpr sum
+|-- FuncDecl matrix_function(int a[][4], int rows) -> int, line: 58
+|   `-- BlockStmt, line: 58
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr i
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr sum
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- WhileStmt
+|       |   |-- Condition:
+|       |   |   `-- BinaryExpr <
+|       |   |       |-- LeftValueExpr i
+|       |   |       `-- LeftValueExpr rows
+|       |   `-- Body:
+|       |       `-- BlockStmt, line: 62
+|       |           |-- ExprStmt line: 63
+|       |           |   `-- BinaryExpr =
+|       |           |       |-- LeftValueExpr sum
+|       |           |       `-- BinaryExpr +
+|       |           |           |-- LeftValueExpr sum
+|       |           |           `-- LeftValueExpr a
+|       |           |               |-- LeftValueExpr i
+|       |           |               `-- literal int: 0
+|       |           |-- ExprStmt line: 64
+|       |           |   `-- BinaryExpr =
+|       |           |       |-- LeftValueExpr i
+|       |           |       `-- BinaryExpr +
+|       |           |           |-- LeftValueExpr i
+|       |           |           `-- literal int: 1
+|       |           `-- BreakStmt
+|       `-- ReturnStmt
+|           `-- LeftValueExpr sum
+|-- FuncDecl cube_function(int a[][2][2], int n) -> int, line: 71
+|   `-- BlockStmt, line: 71
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr i
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr sum
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- literal int: 0
+|       |-- WhileStmt
+|       |   |-- Condition:
+|       |   |   `-- BinaryExpr <
+|       |   |       |-- LeftValueExpr i
+|       |   |       `-- LeftValueExpr n
+|       |   `-- Body:
+|       |       `-- BlockStmt, line: 75
+|       |           |-- ExprStmt line: 76
+|       |           |   `-- BinaryExpr =
+|       |           |       |-- LeftValueExpr sum
+|       |           |       `-- BinaryExpr +
+|       |           |           |-- LeftValueExpr sum
+|       |           |           `-- LeftValueExpr a
+|       |           |               |-- LeftValueExpr i
+|       |           |               |-- literal int: 0
+|       |           |               `-- literal int: 0
+|       |           `-- ExprStmt line: 77
+|       |               `-- BinaryExpr =
+|       |                   |-- LeftValueExpr i
+|       |                   `-- BinaryExpr +
+|       |                       |-- LeftValueExpr i
+|       |                       `-- literal int: 1
+|       `-- ReturnStmt
+|           `-- LeftValueExpr sum
+|-- FuncDecl precedence_function(int x) -> int, line: 83
+|   `-- BlockStmt, line: 83
+|       |-- VarDeclStmt
+|       |   `-- VarDeclaration, BaseType: int
+|       |       `-- VarDeclarator
+|       |           |-- Var: 
+|       |           |   `-- LeftValueExpr result
+|       |           `-- Init: 
+|       |               `-- Initializer
+|       |                   `-- UnaryExpr +
+|       |                       `-- LeftValueExpr x
+|       |-- ExprStmt line: 86
+|       |   `-- BinaryExpr =
+|       |       |-- LeftValueExpr result
+|       |       `-- BinaryExpr -
+|       |           |-- BinaryExpr +
+|       |           |   |-- LeftValueExpr result
+|       |           |   `-- BinaryExpr *
+|       |           |       |-- literal int: 2
+|       |           |       `-- literal int: 3
+|       |           `-- BinaryExpr %
+|       |               |-- BinaryExpr /
+|       |               |   |-- literal int: 4
+|       |               |   `-- literal int: 2
+|       |               `-- literal int: 2
+|       |-- ExprStmt line: 87
+|       |   `-- BinaryExpr =
+|       |       |-- LeftValueExpr result
+|       |       `-- BinaryExpr ||
+|       |           |-- BinaryExpr &&
+|       |           |   |-- BinaryExpr >
+|       |           |   |   |-- LeftValueExpr result
+|       |           |   |   `-- literal int: 0
+|       |           |   `-- BinaryExpr <=
+|       |           |       |-- LeftValueExpr result
+|       |           |       `-- literal int: 100
+|       |           `-- UnaryExpr !
+|       |               `-- BinaryExpr ==
+|       |                   |-- LeftValueExpr result
+|       |                   `-- literal int: 0
+|       |-- ExprStmt line: 88
+|       |   `-- BinaryExpr =
+|       |       |-- LeftValueExpr result
+|       |       `-- ExprList
+|       |           |-- BinaryExpr =
+|       |           |   |-- LeftValueExpr result
+|       |           |   `-- BinaryExpr +
+|       |           |       |-- LeftValueExpr result
+|       |           |       `-- literal int: 1
+|       |           `-- BinaryExpr +
+|       |               |-- LeftValueExpr result
+|       |               `-- literal int: 2
+|       `-- ReturnStmt
+|           `-- LeftValueExpr result
+|-- FuncDecl dangling_else_function(int x) -> int, line: 93
+|   `-- BlockStmt, line: 93
+|       |-- IfStmt
+|       |   |-- Condition:
+|       |   |   `-- BinaryExpr >
+|       |   |       |-- LeftValueExpr x
+|       |   |       `-- literal int: 0
+|       |   |-- Then:
+|       |   |   `-- IfStmt
+|       |   |       |-- Condition:
+|       |   |       |   `-- BinaryExpr >
+|       |   |       |       |-- LeftValueExpr x
+|       |   |       |       `-- literal int: 1
+|       |   |       |-- Then:
+|       |   |       |   `-- ReturnStmt
+|       |   |       |       `-- literal int: 1
+|       |   |       `-- Else:
+|       |   |           `-- ReturnStmt
+|       |   |               `-- literal int: 2
+|       `-- ReturnStmt
+|           `-- literal int: 0
+`-- FuncDecl main() -> int, line: 103
+    `-- BlockStmt, line: 103
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       `-- VarDeclarator
+        |           |-- Var: 
+        |           |   `-- LeftValueExpr local_limit
+        |           `-- Init: 
+        |               `-- Initializer
+        |                   `-- literal int: 4
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       `-- VarDeclarator
+        |           |-- Var: 
+        |           |   `-- LeftValueExpr one_dimension
+        |           |       `-- literal int: 10
+        |           `-- Init: 
+        |               `-- InitializerList
+        |                   |-- Initializer
+        |                   |   `-- literal int: 1
+        |                   |-- Initializer
+        |                   |   `-- literal int: 2
+        |                   |-- Initializer
+        |                   |   `-- literal int: 3
+        |                   |-- Initializer
+        |                   |   `-- literal int: 4
+        |                   |-- Initializer
+        |                   |   `-- literal int: 5
+        |                   |-- Initializer
+        |                   |   `-- literal int: 6
+        |                   |-- Initializer
+        |                   |   `-- literal int: 7
+        |                   |-- Initializer
+        |                   |   `-- literal int: 8
+        |                   |-- Initializer
+        |                   |   `-- literal int: 9
+        |                   `-- Initializer
+        |                       `-- literal int: 10
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       `-- VarDeclarator
+        |           |-- Var: 
+        |           |   `-- LeftValueExpr two_dimension
+        |           |       |-- literal int: 2
+        |           |       `-- literal int: 4
+        |           `-- Init: 
+        |               `-- InitializerList
+        |                   |-- InitializerList
+        |                   |   |-- Initializer
+        |                   |   |   `-- literal int: 1
+        |                   |   |-- Initializer
+        |                   |   |   `-- literal int: 2
+        |                   |   |-- Initializer
+        |                   |   |   `-- literal int: 3
+        |                   |   `-- Initializer
+        |                   |       `-- literal int: 4
+        |                   `-- InitializerList
+        |                       |-- Initializer
+        |                       |   `-- literal int: 5
+        |                       |-- Initializer
+        |                       |   `-- literal int: 6
+        |                       |-- Initializer
+        |                       |   `-- literal int: 7
+        |                       `-- Initializer
+        |                           `-- literal int: 8
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       `-- VarDeclarator
+        |           |-- Var: 
+        |           |   `-- LeftValueExpr three_dimension
+        |           |       |-- literal int: 2
+        |           |       |-- literal int: 2
+        |           |       `-- literal int: 2
+        |           `-- Init: 
+        |               `-- InitializerList
+        |                   |-- InitializerList
+        |                   |   |-- InitializerList
+        |                   |   |   |-- Initializer
+        |                   |   |   |   `-- literal int: 1
+        |                   |   |   `-- Initializer
+        |                   |   |       `-- literal int: 2
+        |                   |   `-- InitializerList
+        |                   |       |-- Initializer
+        |                   |       |   `-- literal int: 3
+        |                   |       `-- Initializer
+        |                   |           `-- literal int: 4
+        |                   `-- InitializerList
+        |                       |-- InitializerList
+        |                       |   |-- Initializer
+        |                       |   |   `-- literal int: 5
+        |                       |   `-- Initializer
+        |                       |       `-- literal int: 6
+        |                       `-- InitializerList
+        |                           |-- Initializer
+        |                           |   `-- literal int: 7
+        |                           `-- Initializer
+        |                               `-- literal int: 8
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       `-- VarDeclarator
+        |           `-- Var: 
+        |               `-- LeftValueExpr x
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       |-- VarDeclarator
+        |       |   |-- Var: 
+        |       |   |   `-- LeftValueExpr y
+        |       |   `-- Init: 
+        |       |       `-- Initializer
+        |       |           `-- literal int: 1
+        |       `-- VarDeclarator
+        |           |-- Var: 
+        |           |   `-- LeftValueExpr z
+        |           `-- Init: 
+        |               `-- Initializer
+        |                   `-- literal int: 2
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       `-- VarDeclarator
+        |           `-- Var: 
+        |               `-- LeftValueExpr uninitialized
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: float
+        |       `-- VarDeclarator
+        |           |-- Var: 
+        |           |   `-- LeftValueExpr f
+        |           `-- Init: 
+        |               `-- Initializer
+        |                   `-- literal float: 2.500000
+        |-- ExprStmt line: 135
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr x
+        |       `-- LeftValueExpr global_array
+        |           |-- literal int: 1
+        |           `-- literal int: 2
+        |-- ExprStmt line: 136
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr one_dimension
+        |       |   `-- literal int: 2
+        |       `-- LeftValueExpr x
+        |-- ExprStmt line: 137
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr two_dimension
+        |       |   |-- literal int: 0
+        |       |   `-- literal int: 1
+        |       `-- LeftValueExpr one_dimension
+        |           `-- literal int: 0
+        |-- ExprStmt line: 138
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr three_dimension
+        |       |   |-- literal int: 1
+        |       |   |-- literal int: 0
+        |       |   `-- literal int: 1
+        |       `-- LeftValueExpr two_dimension
+        |           |-- literal int: 0
+        |           `-- literal int: 0
+        |-- ExprStmt line: 141
+        |   `-- Call empty_function
+        |-- ExprStmt line: 142
+        |   `-- Call return_function
+        |-- ExprStmt line: 144
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr x
+        |       `-- Call scalar_function
+        |           |-- Arg 0: 
+        |           |   `-- literal int: 1
+        |           `-- Arg 1: 
+        |               `-- LeftValueExpr f
+        |-- ExprStmt line: 145
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr y
+        |       `-- Call vector_function
+        |           |-- Arg 0: 
+        |           |   `-- LeftValueExpr one_dimension
+        |           `-- Arg 1: 
+        |               `-- literal int: 10
+        |-- ExprStmt line: 146
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr z
+        |       `-- Call fixed_array_function
+        |           |-- Arg 0: 
+        |           |   `-- LeftValueExpr one_dimension
+        |           `-- Arg 1: 
+        |               `-- literal int: 10
+        |-- ExprStmt line: 147
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr x
+        |       `-- Call matrix_function
+        |           |-- Arg 0: 
+        |           |   `-- LeftValueExpr two_dimension
+        |           `-- Arg 1: 
+        |               `-- literal int: 2
+        |-- ExprStmt line: 148
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr y
+        |       `-- Call cube_function
+        |           |-- Arg 0: 
+        |           |   `-- LeftValueExpr three_dimension
+        |           `-- Arg 1: 
+        |               `-- literal int: 2
+        |-- ExprStmt line: 151
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr x
+        |       `-- Call precedence_function
+        |           `-- Arg 0: 
+        |               `-- LeftValueExpr x
+        |-- ExprStmt line: 152
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr x
+        |       `-- ExprList
+        |           |-- BinaryExpr =
+        |           |   |-- LeftValueExpr x
+        |           |   `-- BinaryExpr +
+        |           |       |-- LeftValueExpr x
+        |           |       `-- literal int: 1
+        |           `-- BinaryExpr +
+        |               |-- LeftValueExpr x
+        |               `-- literal int: 2
+        |-- IfStmt
+        |   |-- Condition:
+        |   |   `-- BinaryExpr >
+        |   |       |-- LeftValueExpr x
+        |   |       `-- literal int: 0
+        |   |-- Then:
+        |   |   `-- BlockStmt, line: 155
+        |   |       `-- ExprStmt line: 156
+        |   |           `-- BinaryExpr =
+        |   |               |-- LeftValueExpr y
+        |   |               `-- BinaryExpr +
+        |   |                   |-- LeftValueExpr y
+        |   |                   `-- literal int: 1
+        |   `-- Else:
+        |       `-- BlockStmt, line: 157
+        |           `-- ExprStmt line: 158
+        |               `-- BinaryExpr =
+        |                   |-- LeftValueExpr y
+        |                   `-- BinaryExpr -
+        |                       |-- LeftValueExpr y
+        |                       `-- literal int: 1
+        |-- IfStmt
+        |   |-- Condition:
+        |   |   `-- BinaryExpr !=
+        |   |       |-- LeftValueExpr x
+        |   |       `-- literal int: 0
+        |   |-- Then:
+        |   |   `-- IfStmt
+        |   |       |-- Condition:
+        |   |       |   `-- BinaryExpr >
+        |   |       |       |-- LeftValueExpr y
+        |   |       |       `-- literal int: 0
+        |   |       |-- Then:
+        |   |       |   `-- ExprStmt line: 164
+        |   |       |       `-- BinaryExpr =
+        |   |       |           |-- LeftValueExpr z
+        |   |       |           `-- BinaryExpr +
+        |   |       |               |-- LeftValueExpr z
+        |   |       |               `-- literal int: 1
+        |   |       `-- Else:
+        |   |           `-- ExprStmt line: 166
+        |   |               `-- BinaryExpr =
+        |   |                   |-- LeftValueExpr z
+        |   |                   `-- BinaryExpr -
+        |   |                       |-- LeftValueExpr z
+        |   |                       `-- literal int: 1
+        |-- ForStmt, line: 169
+        |   |-- Init:
+        |   |   `-- VarDeclStmt
+        |   |       `-- VarDeclaration, BaseType: int
+        |   |           `-- VarDeclarator
+        |   |               |-- Var: 
+        |   |               |   `-- LeftValueExpr i
+        |   |               `-- Init: 
+        |   |                   `-- Initializer
+        |   |                       `-- literal int: 0
+        |   |-- Condition:
+        |   |   `-- BinaryExpr <
+        |   |       |-- LeftValueExpr i
+        |   |       `-- LeftValueExpr local_limit
+        |   |-- Step:
+        |   |   `-- BinaryExpr =
+        |   |       |-- LeftValueExpr i
+        |   |       `-- BinaryExpr +
+        |   |           |-- LeftValueExpr i
+        |   |           `-- literal int: 1
+        |   `-- Body:
+        |       `-- BlockStmt, line: 169
+        |           `-- ExprStmt line: 170
+        |               `-- BinaryExpr =
+        |                   |-- LeftValueExpr x
+        |                   `-- BinaryExpr +
+        |                       |-- LeftValueExpr x
+        |                       `-- LeftValueExpr i
+        |-- VarDeclStmt
+        |   `-- VarDeclaration, BaseType: int
+        |       `-- VarDeclarator
+        |           |-- Var: 
+        |           |   `-- LeftValueExpr j
+        |           `-- Init: 
+        |               `-- Initializer
+        |                   `-- literal int: 0
+        |-- ForStmt, line: 175
+        |   |-- Init:
+        |   |   `-- ExprStmt line: 175
+        |   |       `-- BinaryExpr =
+        |   |           |-- LeftValueExpr j
+        |   |           `-- literal int: 0
+        |   |-- Condition:
+        |   |   `-- BinaryExpr <
+        |   |       |-- LeftValueExpr j
+        |   |       `-- LeftValueExpr local_limit
+        |   |-- Step:
+        |   |   `-- BinaryExpr =
+        |   |       |-- LeftValueExpr j
+        |   |       `-- BinaryExpr +
+        |   |           |-- LeftValueExpr j
+        |   |           `-- literal int: 1
+        |   `-- Body:
+        |       `-- BlockStmt, line: 175
+        |           `-- ExprStmt line: 176
+        |               `-- BinaryExpr =
+        |                   |-- LeftValueExpr y
+        |                   `-- BinaryExpr +
+        |                       |-- LeftValueExpr y
+        |                       `-- LeftValueExpr j
+        |-- WhileStmt
+        |   |-- Condition:
+        |   |   `-- BinaryExpr >
+        |   |       |-- LeftValueExpr j
+        |   |       `-- literal int: 0
+        |   `-- Body:
+        |       `-- ExprStmt line: 181
+        |           `-- BinaryExpr =
+        |               |-- LeftValueExpr j
+        |               `-- BinaryExpr -
+        |                   |-- LeftValueExpr j
+        |                   `-- literal int: 1
+        |-- BlockStmt, line: 184
+        |   `-- ExprStmt line: 185
+        |       `-- BinaryExpr =
+        |           |-- LeftValueExpr x
+        |           `-- BinaryExpr +
+        |               |-- LeftValueExpr x
+        |               `-- literal int: 1
+        |-- BlockStmt, line: 188
+        |-- ExprStmt line: 191
+        |   `-- literal long long: 2147483648
+        |-- ExprStmt line: 194
+        |   `-- Call _sysy_starttime
+        |       `-- Arg 0: 
+        |           `-- literal int: 194
+        |-- ExprStmt line: 195
+        |   `-- Call _sysy_stoptime
+        |       `-- Arg 0: 
+        |           `-- literal int: 195
+        |-- ExprStmt line: 197
+        |   `-- BinaryExpr =
+        |       |-- LeftValueExpr uninitialized
+        |       `-- LeftValueExpr x
+        `-- ReturnStmt
+            `-- BinaryExpr +
+                |-- BinaryExpr +
+                |   |-- BinaryExpr +
+                |   |   |-- LeftValueExpr x
+                |   |   `-- LeftValueExpr y
+                |   `-- LeftValueExpr z
+                `-- LeftValueExpr GLOBAL_N
