@@ -3,20 +3,128 @@
 
 namespace FE::AST
 {
+    namespace
+    {
+        int dimsProduct(const std::vector<int>& dims, size_t from)
+        {
+            long long p = 1;
+            for (size_t i = from; i < dims.size(); ++i)
+            {
+                if (dims[i] <= 0) return 0;
+                p *= dims[i];
+            }
+            return static_cast<int>(p);
+        }
+
+
+    }  // namespace
+
     bool ASTChecker::visit(LeftValExpr& node)
     {
-        // TODO(Lab3-1): 实现左值表达式的语义检查
-        // 检查变量是否存在，处理数组下标访问，进行类型检查和常量折叠
-        (void)node;
-        TODO("Lab3-1: Implement LeftValExpr semantic checking");
+        node.attr.typeChecked = true;
+        VarAttr* attr = lookupSymbol(node.entry);
+        if (!attr)
+        {
+            reportError("use of undeclared identifier '" + (node.entry ? node.entry->getName() : std::string("?")) + "'", node);
+            return false;
+        }
+        if (attr->isFunction)
+        {
+            reportError("function '" + node.entry->getName() + "' used as a variable", node);
+            return false;
+        }
+
+        const std::vector<int>& dims = attr->arrayDims;
+        size_t n = node.indices ? node.indices->size() : 0;
+        if (n > dims.size())
+        {
+            reportError("too many subscripts for '" + node.entry->getName() + "'", node);
+            return false;
+        }
+        if (attr->isTensor && n != 0 && n != dims.size())
+        {
+            reportError("tensor subscript count must equal its rank", node);
+            return false;
+        }
+
+        bool              allConst = true;
+        std::vector<int>  idxVals;
+        idxVals.reserve(n);
+        if (node.indices)
+        {
+            for (ExprNode* idx : *node.indices)
+            {
+                if (!idx) continue;
+                if (!apply(*this, *idx)) return false;
+                const VarValue& iv = idx->attr.val.value;
+                if (!isScalarValue(iv) || (iv.type->getBaseType() != Type_t::INT && iv.type->getBaseType() != Type_t::LL &&
+                                              iv.type->getBaseType() != Type_t::BOOL))
+                {
+                    reportError("array subscript must be an integer", *idx);
+                    return false;
+                }
+                int v = 0;
+                if (!evalConstInt(idx, v)) allConst = false;
+                idxVals.push_back(v);
+            }
+        }
+
+        VarValue v;
+        v.type     = attr->type;
+        v.isTensor = false;
+        v.isArray  = false;
+
+        if (n == dims.size())
+        {
+            node.isLval = true;
+        }
+        else
+        {
+            node.isLval = false;
+            v.isTensor  = attr->isTensor;
+            v.isArray   = !attr->isTensor;
+            v.dims.assign(dims.begin() + static_cast<std::ptrdiff_t>(n), dims.end());
+        }
+
+        node.attr.val.value       = v;
+        node.attr.val.isConstexpr = false;
+
+        // 甯搁噺涓嬫爣璁块棶 const 鏁扮粍/鏍囬噺鏃跺仛甯搁噺鎶樺彔
+        if (attr->isConstDecl && n == dims.size())
+        {
+            if (n == 0)
+            {
+                node.attr.val.value       = attr->constValue;
+                node.attr.val.isConstexpr = true;
+            }
+            else if (allConst && !attr->initList.empty())
+            {
+                int offset = 0;
+                for (size_t i = 0; i < n; ++i)
+                {
+                    int stride = dimsProduct(dims, i + 1);
+                    offset += idxVals[i] * stride;
+                }
+                if (offset >= 0 && static_cast<size_t>(offset) < attr->initList.size())
+                {
+                    node.attr.val.value       = attr->initList[static_cast<size_t>(offset)];
+                    node.attr.val.isConstexpr = true;
+                }
+            }
+        }
+
+        return true;
     }
 
     bool ASTChecker::visit(LiteralExpr& node)
     {
-        // 示例实现：字面量表达式的语义检查
-        // 字面量总是编译期常量，直接设置属性
+        node.attr.typeChecked = true;
         node.attr.val.isConstexpr = true;
         node.attr.val.value       = node.literal;
+        if (node.literal.type == llType)
+        {
+            // 鍓嶇鎶婅秴鍑?int 鑼冨洿鐨勬暣鏁版殏瀛樹负 long long锛汭R 闃舵鎸?32 浣嶅鐞?            node.attr.val.value.type = llType;
+        }
         return true;
     }
 

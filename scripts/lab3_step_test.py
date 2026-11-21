@@ -99,7 +99,17 @@ def root(work):
                     "redefinition of function")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root}
+def declarations(work):
+    expect_semantic(work, "valid_const_dim", "const int n=2; int a[n]={1}; int main(){return 0;}")
+    expect_semantic(work, "float_dim", "int a[1.5]; int main(){return 0;}", "constant integer")
+    expect_semantic(work, "nonconst_dim", "int n=2; int a[n]; int main(){return 0;}", "constant integer")
+    expect_semantic(work, "zero_dim", "int a[0]; int main(){return 0;}", "must be positive")
+    expect_semantic(work, "const_missing_init", "const int n; int main(){return 0;}", "must be initialized")
+    expect_semantic(work, "one_row_overflow",
+                    "int a[2][2]={{1,2,3},{4}}; int main(){return 0;}", "too many initializers")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations}
 
 
 def main():
