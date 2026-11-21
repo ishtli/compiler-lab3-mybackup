@@ -282,7 +282,30 @@ int main(){
 """, 7)
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types, "tensor_elements": tensor_elements}
+def tensor_matmul(work):
+    expect_run(work, "tensor_rectangular", """
+int main() {
+  tensor int a[2][3]={{1,2,3},{4,5,6}};
+  tensor int b[3][2]={{7,8},{9,10},{11,12}};
+  tensor int c[2][2]=a@b;
+  putint(c[0][0]); putch(32); putint(c[0][1]); putch(32);
+  putint(c[1][0]); putch(32); putint(c[1][1]); putch(10);
+  return 0;
+}
+""", 0, "58 64 139 154\n")
+    expect_run(work, "tensor_float_matmul", """
+tensor float a[1][2]={{1.5,2.0}};
+int main(){
+  tensor float b[2][1]={{2.0},{3.0}};
+  tensor float c[1][1]=a@b; putfloat(c[0][0]); putch(10); return 0;
+}
+""", 0, "0x1.2p+3\n")
+    expect_semantic(work, "tensor_matmul_bad", """
+int main(){ tensor int a[2][3]; tensor int b[2][2]; tensor int c[2][2]=a@b; return 0; }
+""", "incompatible for '@'")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types, "tensor_elements": tensor_elements, "tensor_matmul": tensor_matmul}
 
 
 def main():

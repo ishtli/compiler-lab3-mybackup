@@ -169,6 +169,12 @@ namespace ME
             handleLogicalOr(node, *node.lhs, *node.rhs, m);
             return;
         }
+        if (node.op == FE::AST::Operator::MATMUL)
+        {
+            emitTensorMatMul(node, m);
+            return;
+        }
+
         if (node.lhs->attr.val.value.isTensor || node.rhs->attr.val.value.isTensor)
         {
             emitTensorElementwise(node, m);
