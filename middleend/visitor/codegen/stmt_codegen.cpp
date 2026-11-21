@@ -10,12 +10,22 @@ namespace ME
 
     void ASTCodeGen::visit(FE::AST::FuncDeclStmt& node, Module* m)
     {
-        DataType funcRet = convert(node.retType);
+        bool tensorRet = node.retType && node.retType->getTypeGroup() == FE::AST::TypeGroup::TENSOR;
+        DataType ret   = convert(node.retType);
+        if (tensorRet)
+        {
+            // tensor 返回值使用 sret 隐藏指针参数
+            ret = convert(static_cast<FE::AST::TensorType*>(node.retType)->elem);
+        }
+
+        DataType funcRet = tensorRet ? DataType::VOID : ret;
         FuncDefInst* fd  = new FuncDefInst(funcRet, node.entry->getName());
         Function*    func = new Function(fd);
 
         curFunc      = func;
-        curRetType   = funcRet;
+        tensorFirstDims.clear();
+        curRetType   = ret;
+        curRetTensor = tensorRet;
         curSretReg   = 0;
         entryBlock   = func->createBlock();
         curBlock     = entryBlock;
@@ -24,6 +34,12 @@ namespace ME
         FuncDefInst::argList argRegs;
         std::vector<size_t>   argRegIds;
         std::vector<bool>     argIsPtr;
+
+        if (tensorRet)
+        {
+            curSretReg = getNewRegId();
+            argRegs.push_back({DataType::PTR, getRegOperand(curSretReg)});
+        }
 
         if (node.params)
         {
@@ -45,9 +61,20 @@ namespace ME
                 argRegs.push_back({dt, getRegOperand(regId)});
                 argRegIds.push_back(regId);
                 argIsPtr.push_back(pa.isPointer);
+                if (pa.isTensor)
+                {
+                    auto* extent = getRegOperand(getNewRegId());
+                    argRegs.push_back({DataType::I32, extent});
+                    tensorFirstDims[regId] = extent;
+                }
             }
         }
         fd->argRegs = argRegs;
+
+        if (tensorRet)
+        {
+            reg2attr[curSretReg] = FE::AST::VarAttr();
+        }
 
         if (node.params)
         {
@@ -119,6 +146,18 @@ namespace ME
 
     void ASTCodeGen::visit(FE::AST::ReturnStmt& node, Module* m)
     {
+        if (curRetTensor)
+        {
+            if (node.retExpr)
+            {
+                size_t src   = genExpr(*node.retExpr, m);
+                const auto& dims = node.retExpr->attr.val.value.dims;
+                emitTensorAssign(curSretReg, src, convert(node.retExpr->attr.val.value.type), dims, dims);
+            }
+            insert(createRetInst());
+            return;
+        }
+
         if (!node.retExpr)
         {
             insert(createRetInst());

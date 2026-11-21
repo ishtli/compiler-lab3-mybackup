@@ -145,6 +145,7 @@ namespace FE::AST
         bool  isArithmeticScalar(const VarValue& v) const;
         bool  isCondScalar(const VarValue& v) const;
 
+        static bool compatibleTensorShape(const std::vector<int>& lhs, const std::vector<int>& rhs);
         bool checkAssignable(const VarAttr& dst, ExprNode& src, const std::string& context);
         bool checkAssignable(Type* dstType, bool dstTensor, const std::vector<int>& dstDims, ExprNode& src,
             const std::string& context);

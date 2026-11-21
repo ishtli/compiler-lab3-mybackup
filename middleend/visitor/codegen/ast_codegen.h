@@ -54,6 +54,7 @@ namespace ME
         bool                                                     curRetTensor;
         size_t                                                   curSretReg;
         std::vector<std::pair<size_t, size_t>>                   loopStack;  // (continue, break)
+        std::map<size_t, Operand*> tensorFirstDims;
         class RegTab
         {
           public:
@@ -196,7 +197,13 @@ namespace ME
         void emitZeroInit(size_t baseReg, DataType elem, int total);
         void emitArrayInit(FE::AST::InitDecl* init, const std::vector<int>& dims, DataType elem,
             size_t baseReg, size_t& cursor, size_t boundary, Module* m);
-        void emitTensorAssign(size_t dstReg, size_t srcReg, DataType elem, int total);
+        Operand* tensorFirstDim(size_t reg, const std::vector<int>& dims);
+        Operand* tensorElementCount(Operand* first, const std::vector<int>& dims);
+        void insertBeforeEntryTerminator(Instruction* inst);
+        size_t allocateTensorTemp(DataType elem, Operand* count);
+        void requireSameTensorExtent(Operand* lhs, Operand* rhs);
+        void emitTensorAssign(size_t dstReg, size_t srcReg, DataType elem,
+            const std::vector<int>& dstDims, const std::vector<int>& srcDims);
         void emitTensorUnary(FE::AST::UnaryExpr& node, Module* m);
         void emitTensorElementwise(FE::AST::BinaryExpr& node, Module* m);
         void emitTensorMatMul(FE::AST::BinaryExpr& node, Module* m);

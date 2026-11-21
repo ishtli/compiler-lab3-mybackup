@@ -120,6 +120,13 @@ namespace FE::AST
         return symTable.getSymbol(entry);
     }
 
+    bool ASTChecker::compatibleTensorShape(const std::vector<int>& lhs, const std::vector<int>& rhs)
+    {
+        if (lhs.empty() || lhs.size() != rhs.size()) return false;
+        if (lhs[0] > 0 && rhs[0] > 0 && lhs[0] != rhs[0]) return false;
+        return std::equal(lhs.begin() + 1, lhs.end(), rhs.begin() + 1);
+    }
+
     bool ASTChecker::checkAssignable(
         Type* dstType, bool dstTensor, const std::vector<int>& dstDims, ExprNode& src, const std::string& context)
     {
@@ -133,7 +140,7 @@ namespace FE::AST
         Type* dstElem = elementType(dstType);
         if (dstTensor)
         {
-            if (!v.isTensor || v.type->getBaseType() != dstElem->getBaseType() || v.dims != dstDims)
+            if (!v.isTensor || v.type->getBaseType() != dstElem->getBaseType() || !compatibleTensorShape(v.dims, dstDims))
             {
                 reportError("tensor type/shape mismatch in " + context, src);
                 return false;
@@ -629,9 +636,14 @@ namespace FE::AST
 
         if (node.getStmts())
         {
-            for (StmtNode* stmt : *node.getStmts())
+            // 先确定返回张量的固定形状，再检查使用返回结果的普通函数。
+            for (bool tensorResult : {true, false})
             {
-                if (auto* fn = dynamic_cast<FuncDeclStmt*>(stmt)) apply(*this, *fn);
+                for (StmtNode* stmt : *node.getStmts())
+                {
+                    auto* fn = dynamic_cast<FuncDeclStmt*>(stmt);
+                    if (fn && isTensorType(fn->retType) == tensorResult) apply(*this, *fn);
+                }
             }
         }
         if (!mainExists) reportErrorAt("main function is not defined", -1);

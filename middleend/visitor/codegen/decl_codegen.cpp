@@ -189,7 +189,7 @@ namespace ME
                 {
                     // tensor 表达式初始化
                     size_t src = genExpr(*init->init_val, m);
-                    emitTensorAssign(baseElem, src, dt, total);
+                    emitTensorAssign(baseElem, src, dt, attr.arrayDims, init->init_val->attr.val.value.dims);
                 }
                 else
                 {

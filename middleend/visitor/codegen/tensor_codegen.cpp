@@ -3,19 +3,62 @@
 
 namespace ME
 {
-    namespace
+    Operand* ASTCodeGen::tensorFirstDim(size_t reg, const std::vector<int>& dims)
     {
-        int tensorTotal(const std::vector<int>& dims)
-        {
-            int p = 1;
-            for (int d : dims) p *= d;
-            return p;
-        }
-    }  // namespace
+        ASSERT(!dims.empty() && "tensor has no shape");
+        if (dims.front() > 0) return getImmeI32Operand(dims.front());
+        return tensorFirstDims.at(reg);
+    }
 
-    void ASTCodeGen::emitTensorAssign(size_t dstReg, size_t srcReg, DataType elem, int total)
+    void ASTCodeGen::insertBeforeEntryTerminator(Instruction* inst)
     {
-        if (total <= 0) return;
+        auto pos = entryBlock->insts.end();
+        if (!entryBlock->insts.empty() && entryBlock->insts.back()->isTerminator()) --pos;
+        entryBlock->insts.insert(pos, inst);
+    }
+
+    Operand* ASTCodeGen::tensorElementCount(Operand* first, const std::vector<int>& dims)
+    {
+        int stride = 1;
+        for (size_t i = 1; i < dims.size(); ++i) stride *= dims[i];
+        if (dims.front() > 0) return getImmeI32Operand(dims.front() * stride);
+        if (stride == 1) return first;
+        // 动态首维来自参数寄存器，乘法和临时缓冲区都可放在入口。
+        auto* count = getRegOperand(getNewRegId());
+        insertBeforeEntryTerminator(new ArithmeticInst(Operator::MUL, DataType::I32,
+            first, getImmeI32Operand(stride), count));
+        return count;
+    }
+
+    size_t ASTCodeGen::allocateTensorTemp(DataType elem, Operand* count)
+    {
+        size_t reg = getNewRegId();
+        auto* alloc = new AllocaInst(elem, getRegOperand(reg));
+        alloc->elementCount = count;
+        insertBeforeEntryTerminator(alloc);
+        return reg;
+    }
+
+    void ASTCodeGen::requireSameTensorExtent(Operand* lhs, Operand* rhs)
+    {
+        if (lhs == rhs) return;
+        size_t cond = getNewRegId();
+        insert(new IcmpInst(DataType::I32, ICmpOp::EQ, lhs, rhs, getRegOperand(cond)));
+        auto* ok = createBlock();
+        auto* fail = createBlock();
+        insert(createBranchInst(cond, ok->blockId, fail->blockId));
+        curBlock = fail;
+        insert(createCallInst(DataType::VOID, "llvm.trap"));
+        insert(createBranchInst(ok->blockId));
+        curBlock = ok;
+    }
+
+    void ASTCodeGen::emitTensorAssign(size_t dstReg, size_t srcReg, DataType elem,
+        const std::vector<int>& dstDims, const std::vector<int>& srcDims)
+    {
+        Operand* dstFirst = tensorFirstDim(dstReg, dstDims);
+        requireSameTensorExtent(dstFirst, tensorFirstDim(srcReg, srcDims));
+        Operand* total = tensorElementCount(dstFirst, dstDims);
         size_t ivPtr = newEntryAlloca(DataType::I32);
         insert(createStoreInst(DataType::I32, getImmeI32Operand(0), getRegOperand(ivPtr)));
 
@@ -28,7 +71,7 @@ namespace ME
         size_t ivReg = getNewRegId();
         insert(createLoadInst(DataType::I32, getRegOperand(ivPtr), ivReg));
         size_t cond = getNewRegId();
-        insert(createIcmpInst_ImmeRight(ICmpOp::SLT, ivReg, total, cond));
+        insert(new IcmpInst(DataType::I32, ICmpOp::SLT, getRegOperand(ivReg), total, getRegOperand(cond)));
         insert(createBranchInst(cond, bodyBB->blockId, endBB->blockId));
 
         curBlock = bodyBB;
@@ -48,18 +91,11 @@ namespace ME
     void ASTCodeGen::emitTensorUnary(FE::AST::UnaryExpr& node, Module* m)
     {
         const auto& dims = node.attr.val.value.dims;
-        int total = tensorTotal(dims);
-        if (total <= 0) ERROR("Empty tensor in unary operation");
         DataType elem = convert(node.attr.val.value.type);
-
-        size_t tmpArray = newEntryAlloca(elem, {total});
-        FE::AST::VarAttr tmpAttr;
-        tmpAttr.type      = node.attr.val.value.type;
-        tmpAttr.isTensor  = true;
-        tmpAttr.arrayDims = {total};
-        size_t tmpBase = materializeElementPtr(getRegOperand(tmpArray), tmpAttr, false);
-
         size_t src = genExpr(*node.expr, m);
+        Operand* first = tensorFirstDim(src, dims);
+        Operand* total = tensorElementCount(first, dims);
+        size_t tmpBase = allocateTensorTemp(elem, total);
         size_t ivPtr = newEntryAlloca(DataType::I32);
         insert(createStoreInst(DataType::I32, getImmeI32Operand(0), getRegOperand(ivPtr)));
 
@@ -72,7 +108,7 @@ namespace ME
         size_t ivReg = getNewRegId();
         insert(createLoadInst(DataType::I32, getRegOperand(ivPtr), ivReg));
         size_t cond = getNewRegId();
-        insert(createIcmpInst_ImmeRight(ICmpOp::SLT, ivReg, total, cond));
+        insert(new IcmpInst(DataType::I32, ICmpOp::SLT, getRegOperand(ivReg), total, getRegOperand(cond)));
         insert(createBranchInst(cond, bodyBB->blockId, endBB->blockId));
 
         curBlock = bodyBB;
@@ -97,23 +133,14 @@ namespace ME
         insert(createBranchInst(condBB->blockId));
 
         curBlock = endBB;
-        emitElementPtrImme(tmpBase, elem, 0);
+        size_t result = emitElementPtrImme(tmpBase, elem, 0);
+        if (dims.front() < 0) tensorFirstDims[result] = first;
     }
 
     void ASTCodeGen::emitTensorElementwise(FE::AST::BinaryExpr& node, Module* m)
     {
         const auto& dims = node.attr.val.value.dims;
-        int total = tensorTotal(dims);
-        if (total <= 0) ERROR("Empty tensor in elementwise operation");
-
         DataType elem = convert(node.attr.val.value.type);
-        size_t   tmpArray = newEntryAlloca(elem, {total});
-        FE::AST::VarAttr tmpAttr;
-        tmpAttr.type     = node.attr.val.value.type;
-        tmpAttr.isTensor = true;
-        tmpAttr.arrayDims = {total};
-        size_t tmpBase = materializeElementPtr(getRegOperand(tmpArray), tmpAttr, false);
-
         bool lhsTensor = node.lhs->attr.val.value.isTensor;
         bool rhsTensor = node.rhs->attr.val.value.isTensor;
         size_t lhsReg = 0, rhsReg = 0;
@@ -145,6 +172,12 @@ namespace ME
             }
         }
 
+        Operand* first = lhsTensor ? tensorFirstDim(lhsReg, node.lhs->attr.val.value.dims)
+                                   : tensorFirstDim(rhsReg, node.rhs->attr.val.value.dims);
+        if (lhsTensor && rhsTensor)
+            requireSameTensorExtent(first, tensorFirstDim(rhsReg, node.rhs->attr.val.value.dims));
+        Operand* total = tensorElementCount(first, dims);
+        size_t tmpBase = allocateTensorTemp(elem, total);
         size_t ivPtr = newEntryAlloca(DataType::I32);
         insert(createStoreInst(DataType::I32, getImmeI32Operand(0), getRegOperand(ivPtr)));
 
@@ -157,7 +190,7 @@ namespace ME
         size_t ivReg = getNewRegId();
         insert(createLoadInst(DataType::I32, getRegOperand(ivPtr), ivReg));
         size_t cond = getNewRegId();
-        insert(createIcmpInst_ImmeRight(ICmpOp::SLT, ivReg, total, cond));
+        insert(new IcmpInst(DataType::I32, ICmpOp::SLT, getRegOperand(ivReg), total, getRegOperand(cond)));
         insert(createBranchInst(cond, bodyBB->blockId, endBB->blockId));
 
         curBlock = bodyBB;
@@ -199,7 +232,8 @@ namespace ME
 
         curBlock = endBB;
         // 让结果指针成为当前最大寄存器
-        emitElementPtrImme(tmpBase, elem, 0);
+        size_t result = emitElementPtrImme(tmpBase, elem, 0);
+        if (dims.front() < 0) tensorFirstDims[result] = first;
     }
 
     void ASTCodeGen::emitTensorMatMul(FE::AST::BinaryExpr& node, Module* m)
@@ -207,18 +241,15 @@ namespace ME
         const auto& ld = node.lhs->attr.val.value.dims;
         const auto& rd = node.rhs->attr.val.value.dims;
         if (ld.size() != 2 || rd.size() != 2) ERROR("MatMul requires 2-D tensors");
-        int M = ld[0], N = ld[1], P = rd[1];
+        const auto& dims = node.attr.val.value.dims;
+        int N = ld[1], P = rd[1];
         DataType elem = convert(node.attr.val.value.type);
-
-        size_t tmpArray = newEntryAlloca(elem, {M * P});
-        FE::AST::VarAttr tmpAttr;
-        tmpAttr.type      = node.attr.val.value.type;
-        tmpAttr.isTensor  = true;
-        tmpAttr.arrayDims = {M * P};
-        size_t tmpBase = materializeElementPtr(getRegOperand(tmpArray), tmpAttr, false);
-
         size_t aReg = genExpr(*node.lhs, m);
         size_t bReg = genExpr(*node.rhs, m);
+        Operand* first = tensorFirstDim(aReg, ld);
+        requireSameTensorExtent(getImmeI32Operand(N), tensorFirstDim(bReg, rd));
+        Operand* total = tensorElementCount(first, dims);
+        size_t tmpBase = allocateTensorTemp(elem, total);
 
         size_t iPtr = newEntryAlloca(DataType::I32);
         size_t jPtr = newEntryAlloca(DataType::I32);
@@ -235,7 +266,7 @@ namespace ME
         size_t iReg = getNewRegId();
         insert(createLoadInst(DataType::I32, getRegOperand(iPtr), iReg));
         size_t iCmp = getNewRegId();
-        insert(createIcmpInst_ImmeRight(ICmpOp::SLT, iReg, M, iCmp));
+        insert(new IcmpInst(DataType::I32, ICmpOp::SLT, getRegOperand(iReg), first, getRegOperand(iCmp)));
         insert(createBranchInst(iCmp, iBody->blockId, iEnd->blockId));
 
         curBlock = iBody;
@@ -327,6 +358,7 @@ namespace ME
         insert(createBranchInst(iCond->blockId));
 
         curBlock = iEnd;
-        emitElementPtrImme(tmpBase, elem, 0);
+        size_t result = emitElementPtrImme(tmpBase, elem, 0);
+        if (dims.front() < 0) tensorFirstDims[result] = first;
     }
 }  // namespace ME

@@ -1,0 +1,22 @@
+tensor int a[4] = {1, 2, 3, 4};
+tensor int b[4] = {5, 6, 7, 8};
+tensor int c[4];
+
+int main()
+{
+    tensor int d[4] = -a;
+    c = d + b;
+    putint(c[0]); putch(32); putint(c[1]); putch(32); putint(c[2]); putch(32); putint(c[3]); putch(10);
+
+    tensor float fa[3] = {1.5, 2.5, 3.5};
+    tensor float fb[3] = {-1.0, 2.0, -3.0};
+    tensor float fc[3] = fa + fb;
+    putfloat(fc[0]); putch(32); putfloat(fc[1]); putch(32); putfloat(fc[2]); putch(10);
+
+    tensor int M[2][2] = {{1, 2}, {3, 4}};
+    tensor int N[2][2] = {{5, 6}, {7, 8}};
+    tensor int P[2][2] = M @ N;
+    putint(P[0][0]); putch(32); putint(P[0][1]); putch(32);
+    putint(P[1][0]); putch(32); putint(P[1][1]); putch(10);
+    return 0;
+}

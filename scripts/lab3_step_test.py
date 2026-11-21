@@ -305,7 +305,51 @@ int main(){ tensor int a[2][3]; tensor int b[2][2]; tensor int c[2][2]=a@b; retu
 """, "incompatible for '@'")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types, "tensor_elements": tensor_elements, "tensor_matmul": tensor_matmul}
+def tensor_calls(work):
+    expect_run(work, "dynamic_elementwise", """
+tensor int calc(tensor int x[], tensor int y[]) {
+  tensor int r[2]=-(x+y)+12;
+  return r;
+}
+int main(){
+  tensor int a[2]={1,2}; tensor int b[2]={3,4};
+  tensor int c[2]=calc(a,b);
+  return c[0]+c[1];
+}
+""", 14)
+    expect_run(work, "runtime_extent_forwarding", """
+void twice(tensor int a[]) { a=a*2; }
+void forward(tensor int a[]) { twice(a); }
+int main(){
+  tensor int a[2]={2,4}; tensor int b[3]={1,2,3};
+  forward(a); forward(b); return a[1]+b[2];
+}
+""", 14)
+    expect_run(work, "dynamic_matmul", """
+int product(tensor int a[][3], tensor int b[][2]) {
+  tensor int c[2][2]=a@b; return c[1][1];
+}
+int main(){
+  tensor int a[2][3]={{1,2,3},{4,5,6}};
+  tensor int b[3][2]={{7,8},{9,10},{11,12}};
+  return product(a,b);
+}
+""", 154)
+    expect_semantic(work, "call_wrong_tail", """
+int f(tensor int v[][2]) { return v[0][0]; }
+int main(){ tensor int a[2][3]; return f(a); }
+""", "incompatible shape")
+    expect_semantic(work, "unknown_ret", """
+tensor int f(tensor int v[]) { return v; }
+int main(){ return 0; }
+""", "known at compile time")
+    expect_semantic(work, "mismatched_returns", """
+tensor int f(int n) { tensor int a[2]; tensor int b[3]; if(n) return a; return b; }
+int main(){ return 0; }
+""", "inconsistent tensor return shape")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types, "tensor_elements": tensor_elements, "tensor_matmul": tensor_matmul, "tensor_calls": tensor_calls}
 
 
 def main():

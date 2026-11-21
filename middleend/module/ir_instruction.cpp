@@ -44,7 +44,12 @@ namespace ME
     {
         std::stringstream ss;
         ss << res << " = alloca ";
-        if (dims.empty()) { ss << dt << getComment(); }
+        if (dims.empty())
+        {
+            ss << dt;
+            if (elementCount) ss << ", i32 " << elementCount;
+            ss << getComment();
+        }
         else
         {
             for (int dim : dims) ss << "[" << dim << " x ";

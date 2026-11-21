@@ -79,9 +79,8 @@ namespace ME
         if (lhs.attr.val.value.isTensor && (!lhs.indices || lhs.indices->empty()))
         {
             size_t src = genExpr(rhs, m);
-            int    total = 1;
-            for (int d : lhs.attr.val.value.dims) total *= d;
-            emitTensorAssign(ptr, src, convert(lhs.attr.val.value.type), total);
+            emitTensorAssign(ptr, src, convert(lhs.attr.val.value.type),
+                lhs.attr.val.value.dims, rhs.attr.val.value.dims);
             return;
         }
 
@@ -268,9 +267,31 @@ namespace ME
                 }
             }
             args.emplace_back(isPtr ? DataType::PTR : want, getRegOperand(reg));
+            if (pa.isTensor)
+                args.emplace_back(DataType::I32, tensorFirstDim(reg, arg->attr.val.value.dims));
         }
 
         DataType ret = scalarType(fd->retType);
+        if (fd->retType->getTypeGroup() == FE::AST::TypeGroup::TENSOR)
+        {
+            // tensor 返回值暂时只支持通过 sret 的调用约定，见 stmt_codegen.cpp
+            ret = DataType::VOID;
+            int total = 1;
+            for (int d : fd->retDims) total *= d;
+            DataType elem = scalarType(fd->retType);
+            size_t bufArray = newEntryAlloca(elem, {total});
+            FE::AST::VarAttr ba;
+            ba.type      = fd->retType;
+            if (ba.type && ba.type->getTypeGroup() == FE::AST::TypeGroup::TENSOR)
+                ba.type = static_cast<FE::AST::TensorType*>(ba.type)->elem;
+            ba.isTensor  = true;
+            ba.arrayDims = {total};
+            size_t bufElem = materializeElementPtr(getRegOperand(bufArray), ba, false);
+            args.insert(args.begin(), {DataType::PTR, getRegOperand(bufElem)});
+            insert(createCallInst(DataType::VOID, fd->entry->getName(), args));
+            return;
+        }
+
         if (ret == DataType::VOID)
         {
             insert(createCallInst(DataType::VOID, fd->entry->getName(), args));

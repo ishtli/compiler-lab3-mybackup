@@ -11,7 +11,12 @@ namespace FE::AST
 
     bool ASTChecker::visit(FuncDeclStmt& node)
     {
-        if (!node.body) return true;
+        if (!node.body)
+        {
+            if (!isTensorType(node.retType)) return true;
+            reportError("tensor function must return a value", node);
+            return false;
+        }
 
         FuncDeclStmt* oldFunc    = curFuncDecl;
         Type*         oldRetType = curFuncRetType;
@@ -47,6 +52,11 @@ namespace FE::AST
         }
 
         bool ok = apply(*this, *node.body);
+        if (curFuncRetIsTensor && !node.retDimsKnown)
+        {
+            reportError("tensor function must return a compile-time known shape", node);
+            ok = false;
+        }
 
         symTable.exitScope();
 
@@ -124,6 +134,11 @@ namespace FE::AST
             if (v.type->getBaseType() != curFuncRetType->getBaseType())
             {
                 reportError("returned tensor element type does not match function return type", *node.retExpr);
+                return false;
+            }
+            if (v.dims.empty() || v.dims.front() <= 0)
+            {
+                reportError("returned tensor shape must be known at compile time", *node.retExpr);
                 return false;
             }
             if (!curFuncDecl->retDimsKnown)

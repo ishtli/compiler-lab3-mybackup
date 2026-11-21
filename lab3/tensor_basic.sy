@@ -1,0 +1,39 @@
+tensor int a[4] = {1, 2, 3, 4};
+tensor int b[4] = {5, 6, 7, 8};
+
+tensor int addv(tensor int x[], tensor int y[], int n)
+{
+    tensor int r[4] = {0, 0, 0, 0};
+    int i = 0;
+    while (i < n) {
+        r[i] = x[i] + y[i];
+        i = i + 1;
+    }
+    return r;
+}
+
+int sum4(tensor int x[])
+{
+    return x[0] + x[1] + x[2] + x[3];
+}
+
+int main()
+{
+    tensor int c[4] = a + b * 2 + 10;
+    tensor int d[4] = a * b;
+    tensor int e[4] = a % 3;
+    putint(c[0]); putch(32); putint(c[1]); putch(32); putint(c[2]); putch(32); putint(c[3]); putch(10);
+    putint(d[0]); putch(32); putint(d[1]); putch(32); putint(d[2]); putch(32); putint(d[3]); putch(10);
+    putint(e[0]); putch(32); putint(e[1]); putch(32); putint(e[2]); putch(32); putint(e[3]); putch(10);
+
+    tensor int f[4] = addv(a, b, 4);
+    putint(f[0]); putch(32); putint(f[1]); putch(32); putint(f[2]); putch(32); putint(f[3]); putch(10);
+    putint(sum4(f)); putch(10);
+
+    tensor int A[2][3] = {{1, 2, 3}, {4, 5, 6}};
+    tensor int B[3][2] = {{7, 8}, {9, 10}, {11, 12}};
+    tensor int C[2][2] = A @ B;
+    putint(C[0][0]); putch(32); putint(C[0][1]); putch(32);
+    putint(C[1][0]); putch(32); putint(C[1][1]); putch(10);
+    return 0;
+}

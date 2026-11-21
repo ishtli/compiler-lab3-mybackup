@@ -1,0 +1,18 @@
+int sum(tensor int x[][2], int n)
+{
+    int s = 0;
+    int i = 0;
+    while (i < n) {
+        s = s + x[i][0] + x[i][1];
+        i = i + 1;
+    }
+    return s;
+}
+
+int main()
+{
+    tensor int m[3][2] = {{1, 2}, {3, 4}, {5, 6}};
+    putint(sum(m, 3));
+    putch(10);
+    return 0;
+}
