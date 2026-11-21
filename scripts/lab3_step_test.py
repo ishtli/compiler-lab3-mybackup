@@ -41,7 +41,46 @@ def parser(work):
     require(out.read_text().count("ReturnStmt") == 2, "expected both return forms in AST")
 
 
-CHECKS = {"parser": parser}
+def symbols(work):
+    src = work / "symbol_scope.cpp"
+    src.write_text(r"""
+#include <frontend/symbol/symbol_table.h>
+#include <cassert>
+
+int main()
+{
+    FE::Sym::SymTable table;
+    auto* name = FE::Sym::Entry::getEntry("value");
+    FE::AST::VarAttr global(FE::AST::intType);
+    FE::AST::VarAttr inner(FE::AST::floatType);
+    assert(table.isGlobalScope() && table.getScopeDepth() == 0);
+    assert(table.getSymbol(name) == nullptr);
+    table.addSymbol(name, global);
+    auto* outer = table.getSymbol(name);
+    table.enterScope();
+    assert(!table.hasSymbolInCurrentScope(name) && table.getSymbol(name) == outer);
+    table.addSymbol(name, inner);
+    assert(table.getSymbol(name)->type == FE::AST::floatType);
+    table.exitScope();
+    assert(table.getSymbol(name) == outer && table.getScopeDepth() == 0);
+    table.reset();
+    assert(table.isGlobalScope() && table.getSymbol(name) == nullptr);
+}
+""", encoding="utf-8")
+    binary = work / "symbol_scope"
+    objects = (
+        "frontend/symbol/symbol_table.o",
+        "interfaces/frontend/symbol/symbol_entry.o",
+        "interfaces/frontend/ast/ast_defs.o",
+    )
+    result = run("c++", "-std=c++17", "-I.", "-Iinterfaces", "-Iutils",
+                 src, *(ROOT / "obj" / item for item in objects), "-o", binary)
+    require(result.returncode == 0, result.stderr)
+    result = run(binary)
+    require(result.returncode == 0, result.stderr)
+
+
+CHECKS = {"parser": parser, "symbols": symbols}
 
 
 def main():
