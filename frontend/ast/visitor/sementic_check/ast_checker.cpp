@@ -235,7 +235,13 @@ namespace FE::AST
 
                 if (p->dims && !p->dims->empty())
                 {
-                    // 形参数组的第一维退化为指针，第一维可以是 [] 或具体大小
+                    // 普通数组沿用 Lab2 的兼容规则，张量首维必须由实参提供。
+                    if (p->varAttr.isTensor)
+                    {
+                        auto* first = dynamic_cast<LiteralExpr*>(p->dims->front());
+                        if (!first || first->literal.type != intType || first->literal.getInt() != -1)
+                            reportError("tensor parameter first dimension must be []", *p);
+                    }
                     std::vector<int> dims;
                     dims.push_back(-1);
                     for (size_t i = 0; i < p->dims->size(); ++i)
@@ -269,6 +275,8 @@ namespace FE::AST
                 }
                 else
                 {
+                    if (p->varAttr.isTensor)
+                        reportError("tensor parameter must have at least one dimension", *p);
                     p->varAttr.isPointer = false;
                 }
             }
@@ -331,6 +339,13 @@ namespace FE::AST
                     }
                     dims.push_back(val);
                 }
+            }
+
+            if (isTens && dims.empty())
+            {
+                reportError("tensor declaration must specify dimensions", *d);
+                ok = false;
+                continue;
             }
 
             VarAttr attr;

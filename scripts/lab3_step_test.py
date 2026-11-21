@@ -230,7 +230,34 @@ def tensor_parser(work):
     parser(work)
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser}
+def tensor_types(work):
+    expect_semantic(work, "tensor_shape", """
+int main(){ tensor int x[2][2]; tensor int y[4]; x=y; return 0; }
+""", "type/shape mismatch")
+    expect_semantic(work, "tensor_mixed", """
+int main(){ tensor int x[2]; tensor int y[2]=x+0.5; return 0; }
+""", "base types must match")
+    expect_semantic(work, "tensor_rank", """
+int main(){ tensor int x[2][2]; return x[0]; }
+""", "subscript count")
+    expect_semantic(work, "tensor_condition", """
+int main(){ tensor int x[2]; if(!x) return 1; return 0; }
+""", "not supported")
+    expect_semantic(work, "tensor_float_mod", """
+int main(){ tensor float x[2]; tensor float y[2]=x%2.0; return 0; }
+""", "not supported for float tensors")
+    expect_semantic(work, "tensor_float_dim", """
+int main(){ tensor int x[1.5]; return 0; }
+""", "constant integer")
+    expect_semantic(work, "tensor_fixed_first", """
+int f(tensor int x[2][2]){return x[0][0];}
+int main(){ return 0; }
+""", "first dimension must be []")
+    expect_semantic(work, "tensor_scalar_alloc", "tensor int x; int main(){return 0;}",
+                    "must specify dimensions")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types}
 
 
 def main():

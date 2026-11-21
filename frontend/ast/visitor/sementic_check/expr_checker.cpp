@@ -556,7 +556,8 @@ namespace FE::AST
                     ok = false;
                     continue;
                 }
-                if (!sameTrailingDims(pAttr.arrayDims, av.dims))
+                if ((pTens && pAttr.arrayDims.size() != av.dims.size()) ||
+                    !sameTrailingDims(pAttr.arrayDims, av.dims))
                 {
                     reportError("argument " + std::to_string(i + 1) + " of '" + node.func->getName() +
                                     "' has incompatible shape",

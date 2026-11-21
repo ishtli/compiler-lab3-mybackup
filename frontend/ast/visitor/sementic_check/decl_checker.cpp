@@ -82,6 +82,13 @@ namespace FE::AST
                 }
             }
 
+            if (isTens && dims.empty())
+            {
+                reportError("tensor declaration must specify dimensions", *d);
+                res = false;
+                continue;
+            }
+
             VarAttr attr;
             attr.type        = elem;
             attr.isConstDecl = node.isConstDecl;
