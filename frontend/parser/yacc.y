@@ -329,14 +329,6 @@ IF_STMT:
 //     | BLOCK_STMT {
 //         $$ = $1;
 //     }
-RETURN_STMT: //返回void和返回值两种情况
-    RETURN SEMICOLON {
-        $$ = new ReturnStmt(nullptr, @1.begin.line, @1.begin.column);
-    }
-    | RETURN EXPR SEMICOLON {
-        $$ = new ReturnStmt($2, @1.begin.line, @1.begin.column);
-    }
-    ;
 
 WHILE_STMT:
     WHILE LPAREN EXPR RPAREN STMT {
