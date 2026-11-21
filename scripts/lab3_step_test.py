@@ -120,7 +120,20 @@ def expressions(work):
     expect_semantic(work, "const_assign", "int main(){const int a=1; a=2; return a;}", "const")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions}
+def semantic(work):
+    cases = sorted((ROOT / "testcase/semant").glob("*.sy"))
+    require(len(cases) == 18, f"expected 18 course semantic cases, got {len(cases)}")
+    for src in cases:
+        result = run(COMPILER, src, "-ast", "-o", work / "course.ast")
+        require(result.returncode != 0 and "Semantic check failed" in result.stderr
+                and "Error:" in result.stderr, f"{src.name}: {result.stderr!r}")
+    out = expect_semantic(work, "typed", "int main(){ while(0){break;} return 1+2; }")
+    require("BinaryExpr + : int const" in out.read_text(), "typed AST lacks folded integer")
+    expect_semantic(work, "break", "int main(){break; return 0;}", "outside")
+    expect_semantic(work, "condition", "int main(){if(putint(1)) return 1; return 0;}", "condition")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic}
 
 
 def main():

@@ -55,6 +55,7 @@ namespace FE::AST
       private:
         void              emitPrefix(std::ostream& os) const;
         void              emitHeader(std::ostream& os, const std::string& text) const;
+        std::string       typeSuffix(const NodeAttr& attr) const;
         void              pushLast(bool isLast);
         void              popLast();
         void              withChild(bool isLast, const std::function<void()>& fn);

@@ -145,41 +145,79 @@ namespace FE::AST
 
     bool ASTChecker::visit(WhileStmt& node)
     {
-        // TODO(Lab3-1): 实现while循环的语义检查
-        // 检查作用域，访问条件表达式，管理循环深度，访问循环体
-        (void)node;
-        TODO("Lab3-1: Implement WhileStmt semantic checking");
+        bool ok = true;
+        if (node.cond)
+        {
+            ok &= apply(*this, *node.cond);
+            if (!isCondScalar(node.cond->attr.val.value))
+            {
+                reportError("while condition must be a scalar expression", *node.cond);
+                ok = false;
+            }
+        }
+        ++loopDepth;
+        checkBranch(node.body);
+        --loopDepth;
+        return ok;
     }
 
     bool ASTChecker::visit(IfStmt& node)
     {
-        // TODO(Lab3-1): 实现if语句的语义检查
-        // 检查作用域，访问条件表达式，分别访问then和else分支
-        (void)node;
-        TODO("Lab3-1: Implement IfStmt semantic checking");
+        bool ok = true;
+        if (node.cond)
+        {
+            ok &= apply(*this, *node.cond);
+            if (!isCondScalar(node.cond->attr.val.value))
+            {
+                reportError("if condition must be a scalar expression", *node.cond);
+                ok = false;
+            }
+        }
+        checkBranch(node.thenStmt);
+        checkBranch(node.elseStmt);
+        return ok;
     }
 
     bool ASTChecker::visit(BreakStmt& node)
     {
-        // TODO(Lab3-1): 实现break语句的语义检查
-        // 检查是否在循环内使用
-        (void)node;
-        TODO("Lab3-1: Implement BreakStmt semantic checking");
+        if (loopDepth == 0)
+        {
+            reportError("break statement outside loop", node);
+            return false;
+        }
+        return true;
     }
 
     bool ASTChecker::visit(ContinueStmt& node)
     {
-        // TODO(Lab3-1): 实现continue语句的语义检查
-        // 检查是否在循环内使用
-        (void)node;
-        TODO("Lab3-1: Implement ContinueStmt semantic checking");
+        if (loopDepth == 0)
+        {
+            reportError("continue statement outside loop", node);
+            return false;
+        }
+        return true;
     }
 
     bool ASTChecker::visit(ForStmt& node)
     {
-        // TODO(Lab3-1): 实现for循环的语义检查
-        // 检查作用域，访问初始化、条件、步进表达式，管理循环深度
-        (void)node;
-        TODO("Lab3-1: Implement ForStmt semantic checking");
+        symTable.enterScope();
+        bool ok = true;
+        if (node.init) ok &= apply(*this, *node.init);
+        if (node.cond)
+        {
+            ok &= apply(*this, *node.cond);
+            if (!isCondScalar(node.cond->attr.val.value))
+            {
+                reportError("for condition must be a scalar expression", *node.cond);
+                ok = false;
+            }
+        }
+        if (node.step) ok &= apply(*this, *node.step);
+
+        ++loopDepth;
+        checkBranch(node.body);
+        --loopDepth;
+        symTable.exitScope();
+        return ok;
     }
 }  // namespace FE::AST

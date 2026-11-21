@@ -5,7 +5,7 @@ namespace FE::AST
 {
     void ASTPrinter::visit(LeftValExpr& node, std::ostream* os)
     {
-        emitHeader(*os, std::string("LeftValueExpr ") + node.entry->getName());
+        emitHeader(*os, std::string("LeftValueExpr ") + node.entry->getName() + typeSuffix(node.attr));
         if (!node.indices) return;
         size_t cnt = node.indices->size();
         for (size_t i = 0; i < cnt; ++i)
@@ -31,21 +31,21 @@ namespace FE::AST
 
     void ASTPrinter::visit(UnaryExpr& node, std::ostream* os)
     {
-        emitHeader(*os, std::string("UnaryExpr ") + toString(node.op));
+        emitHeader(*os, std::string("UnaryExpr ") + toString(node.op) + typeSuffix(node.attr));
         if (!node.expr) return;
         withChild(true, [&]() { apply(*this, *node.expr, os); });
     }
 
     void ASTPrinter::visit(BinaryExpr& node, std::ostream* os)
     {
-        emitHeader(*os, std::string("BinaryExpr ") + toString(node.op));
+        emitHeader(*os, std::string("BinaryExpr ") + toString(node.op) + typeSuffix(node.attr));
         if (node.lhs) withChild(false, [&]() { apply(*this, *node.lhs, os); });
         if (node.rhs) withChild(true, [&]() { apply(*this, *node.rhs, os); });
     }
 
     void ASTPrinter::visit(CallExpr& node, std::ostream* os)
     {
-        emitHeader(*os, std::string("Call ") + node.func->getName());
+        emitHeader(*os, std::string("Call ") + node.func->getName() + typeSuffix(node.attr));
         if (!node.args) return;
         size_t cnt = node.args->size();
         for (size_t i = 0; i < cnt; ++i)
@@ -62,7 +62,7 @@ namespace FE::AST
 
     void ASTPrinter::visit(CommaExpr& node, std::ostream* os)
     {
-        emitHeader(*os, "ExprList");
+        emitHeader(*os, "ExprList" + typeSuffix(node.attr));
         if (!node.exprs) return;
         size_t cnt = node.exprs->size();
         for (size_t i = 0; i < cnt; ++i)

@@ -16,6 +16,29 @@ namespace FE::AST
         os << text << "\n";
     }
 
+    std::string ASTPrinter::typeSuffix(const NodeAttr& attr) const
+    {
+        if (!attr.typeChecked || !attr.val.value.type) return "";
+        if (attr.val.value.type == voidType && !attr.val.value.isTensor) return "";
+        std::string text = attr.val.value.type->toString();
+        if (attr.val.value.isTensor)
+        {
+            text = "tensor " + text;
+        }
+        if (!attr.val.value.dims.empty())
+        {
+            text += "[";
+            for (size_t i = 0; i < attr.val.value.dims.size(); ++i)
+            {
+                if (i) text += "][";
+                text += std::to_string(attr.val.value.dims[i]);
+            }
+            text += "]";
+        }
+        if (attr.val.isConstexpr) text += " const";
+        return " : " + text;
+    }
+
     void ASTPrinter::pushLast(bool isLast) { lastStack.push_back(isLast); }
     void ASTPrinter::popLast()
     {
