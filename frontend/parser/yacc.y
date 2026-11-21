@@ -70,7 +70,7 @@
 
 %token <std::string> IDENT 
 
-%token INT FLOAT VOID
+%token INT FLOAT VOID TENSOR
 
 %token IF ELSE FOR WHILE CONTINUE BREAK SWITCH CASE GOTO DO RETURN CONST
 %token SEMICOLON COMMA LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE
@@ -102,6 +102,7 @@
 %token NOT     "!"
 %token AND     "&&"
 %token OR      "||"
+%token AT      "@"
 
 
 %nterm <FE::AST::Operator> UNARY_OP
@@ -564,6 +565,9 @@ MULDIV_EXPR:
     | MULDIV_EXPR PERCENT UNARY_EXPR {
         $$ = new BinaryExpr(Operator::MOD, $1, $3, @1.begin.line, @1.begin.column);
     }
+    | MULDIV_EXPR AT UNARY_EXPR {
+        $$ = new BinaryExpr(Operator::MATMUL, $1, $3, @1.begin.line, @1.begin.column);
+    }
     ;
 
 UNARY_EXPR:
@@ -666,6 +670,12 @@ TYPE:
     }
     | VOID{
         $$ = TypeFactory::getBasicType(Type_t::VOID);
+    }
+    | TENSOR INT {
+        $$ = TypeFactory::getTensorType(TypeFactory::getBasicType(Type_t::INT));
+    }
+    | TENSOR FLOAT {
+        $$ = TypeFactory::getTensorType(TypeFactory::getBasicType(Type_t::FLOAT));
     }
     ;
 

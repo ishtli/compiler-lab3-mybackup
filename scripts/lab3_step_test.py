@@ -219,7 +219,18 @@ return a[0][0][2]+2*a[0][1][0]+3*a[1][0][0]+b[1][0][2];}
     run_group(work, "Advanced")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced}
+def tensor_parser(work):
+    result, out = compile_case(work, "tensor_parser",
+        "tensor float a[2][2]; int main(){ tensor float b[2][2]=a+a@a; return 0; }",
+        "-parser")
+    require(result.returncode == 0, result.stderr)
+    ast = out.read_text()
+    require("tensor float" in ast and 0 <= ast.find("BinaryExpr +") < ast.find("BinaryExpr @"),
+            f"unexpected tensor grammar or operator precedence: {ast}")
+    parser(work)
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser}
 
 
 def main():
