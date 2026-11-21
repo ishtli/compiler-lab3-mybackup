@@ -70,6 +70,12 @@ namespace ME
     void initArrayGlb(
         std::ostream& s, DataType type, const FE::AST::VarAttr& v, size_t dimDph, size_t beginPos, size_t endPos)
     {
+        if (beginPos >= v.initList.size())
+        {
+            for (size_t i = dimDph; i < v.arrayDims.size(); ++i) s << "[" << v.arrayDims[i] << " x ";
+            s << type << std::string(v.arrayDims.size() - dimDph, ']') << " zeroinitializer";
+            return;
+        }
         if (dimDph == 0)
         {
             bool allZero = true;
@@ -97,7 +103,7 @@ namespace ME
             }
         }
 
-        if (beginPos == endPos)
+        if (dimDph == v.arrayDims.size())
         {
             switch (type)
             {

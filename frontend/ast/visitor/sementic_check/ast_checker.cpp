@@ -432,15 +432,8 @@ namespace FE::AST
             return false;
         }
 
-        bool needValues = isGlobal || attr.isConstDecl;
-        if (needValues)
-        {
-            attr.initList.assign(static_cast<size_t>(total), zeroValue(elem));
-        }
-        else
-        {
-            attr.initList.clear();
-        }
+        // 只记录显式初始化的前缀；末尾缺省元素由常量求值和 IR 打印按零处理。
+        attr.initList.clear();
 
         size_t cursor = 0;
         flattenInitializer(decl.init, dims, elem, attr, cursor, isGlobal, decl);
@@ -504,8 +497,9 @@ namespace FE::AST
                 {
                     reportError("const initializer element must be a constant expression", *val);
                 }
-                if (!attr.initList.empty() && cursor < attr.initList.size())
+                if (isGlobal || attr.isConstDecl)
                 {
+                    if (attr.initList.size() <= cursor) attr.initList.resize(cursor + 1, zeroValue(elem));
                     attr.initList[cursor] = convertValue(v, elem);
                 }
                 ++cursor;

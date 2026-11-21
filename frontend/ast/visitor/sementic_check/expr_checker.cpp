@@ -8,17 +8,6 @@ namespace FE::AST
 {
     namespace
     {
-        int dimsProduct(const std::vector<int>& dims, size_t from)
-        {
-            long long p = 1;
-            for (size_t i = from; i < dims.size(); ++i)
-            {
-                if (dims[i] <= 0) return 0;
-                p *= dims[i];
-            }
-            return static_cast<int>(p);
-        }
-
         bool sameTrailingDims(const std::vector<int>& formal, const std::vector<int>& actual)
         {
             size_t first = 0;
@@ -112,19 +101,17 @@ namespace FE::AST
                 node.attr.val.value       = attr->constValue;
                 node.attr.val.isConstexpr = true;
             }
-            else if (allConst && !attr->initList.empty())
+            else if (allConst && attr->isInitialized)
             {
-                int offset = 0;
+                size_t offset = 0;
                 for (size_t i = 0; i < n; ++i)
                 {
-                    int stride = dimsProduct(dims, i + 1);
-                    offset += idxVals[i] * stride;
+                    if (idxVals[i] < 0 || idxVals[i] >= dims[i]) return true;
+                    offset = offset * static_cast<size_t>(dims[i]) + static_cast<size_t>(idxVals[i]);
                 }
-                if (offset >= 0 && static_cast<size_t>(offset) < attr->initList.size())
-                {
-                    node.attr.val.value       = attr->initList[static_cast<size_t>(offset)];
-                    node.attr.val.isConstexpr = true;
-                }
+                node.attr.val.value = offset < attr->initList.size() ? attr->initList[offset]
+                    : (attr->type == floatType ? VarValue(0.0f) : VarValue(0));
+                node.attr.val.isConstexpr = true;
             }
         }
 

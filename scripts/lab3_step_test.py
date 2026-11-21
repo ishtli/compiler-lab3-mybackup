@@ -202,7 +202,24 @@ int main(){float a[2]; a[1]=3; putfloat(f(a)); putch(10); return f(a)+4;}
 """, 5, "0x1.8p+0\n")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays}
+def advanced(work):
+    ir = expect_run(work, "big_zero", """
+int a[50000000]={};
+const int b[50000000]={};
+const int n=b[49999999]+2;
+int main(){ int x[n]; a[5]=3; x[1]=a[5]; return x[1]+b[5]; }
+""", 3)
+    require(ir.stat().st_size < 20000 and "zeroinitializer" in ir.read_text(),
+            "empty initializer expanded instead of emitting compact LLVM zero")
+    expect_run(work, "nested_init", """
+int a[5][4][3]={{{2,3},6,7},7,8,11};
+int main(){int b[5][4][3]={{{2,3},6,7},7,8,11};
+return a[0][0][2]+2*a[0][1][0]+3*a[1][0][0]+b[1][0][2];}
+""", 44)
+    run_group(work, "Advanced")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced}
 
 
 def main():

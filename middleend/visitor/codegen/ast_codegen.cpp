@@ -371,7 +371,7 @@ namespace ME
 
             auto it = glbSymbols.find(lv->entry);
             if (it == glbSymbols.end()) continue;
-            FE::AST::VarAttr attr = it->second;
+            const FE::AST::VarAttr& attr = it->second;
             DataType          dt   = convert(attr.type);
 
             if (attr.arrayDims.empty())
