@@ -190,7 +190,19 @@ int main(){ int i=0; int s=0;
     run_group(work, "Basic")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic}
+def arrays(work):
+    expect_run(work, "array_address", """
+int f(int a[][3]) { return a[1][2]; }
+int row(int a[]) { return a[1]; }
+int main(){int a[2][3]; a[1][2]=7; a[1][1]=9; return f(a)+row(a[1]);}
+""", 16)
+    expect_run(work, "float_array", """
+float f(float a[]) { return a[1]/2; }
+int main(){float a[2]; a[1]=3; putfloat(f(a)); putch(10); return f(a)+4;}
+""", 5, "0x1.8p+0\n")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays}
 
 
 def main():

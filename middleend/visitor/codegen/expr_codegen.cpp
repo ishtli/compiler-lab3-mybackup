@@ -22,6 +22,16 @@ namespace ME
     {
         size_t ptr = genLValuePtr(node, m);
 
+        // 标量访问：dims 为空且不是数组/张量
+        bool scalar = !node.attr.val.value.isTensor && !node.attr.val.value.isArray &&
+                      node.attr.val.value.dims.empty();
+
+        if (!scalar)
+        {
+            // 整个数组/张量或子数组的地址，结果就是 genLValuePtr 返回的寄存器
+            return;
+        }
+
         DataType dt = convert(node.attr.val.value.type);
         size_t   r  = getNewRegId();
         insert(createLoadInst(dt, getRegOperand(ptr), r));
