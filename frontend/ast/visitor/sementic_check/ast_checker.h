@@ -8,6 +8,8 @@
 #include <frontend/ast/stmt.h>
 #include <frontend/symbol/symbol_table.h>
 #include <vector>
+#include <string>
+#include <set>
 
 namespace FE::AST
 {
@@ -45,8 +47,10 @@ namespace FE::AST
 
         bool mainExists;
 
-        bool  funcHasReturn;
-        Type* curFuncRetType;
+        bool          funcHasReturn;
+        Type*         curFuncRetType;
+        FuncDeclStmt* curFuncDecl;
+        bool          curFuncRetIsTensor;
 
         size_t loopDepth;
 
@@ -60,6 +64,8 @@ namespace FE::AST
               mainExists(false),
               funcHasReturn(false),
               curFuncRetType(voidType),
+              curFuncDecl(nullptr),
+              curFuncRetIsTensor(false),
               loopDepth(0),
               errors()
         {
@@ -129,6 +135,29 @@ namespace FE::AST
         void libFuncRegister();
 
       private:
+        void reportError(const std::string& msg, const Node& node);
+        void reportErrorAt(const std::string& msg, int line);
+        bool evalConstInt(ExprNode* expr, int& value);
+
+        Type* elementType(Type* t) const;
+        bool  isTensorType(Type* t) const;
+        bool  isScalarValue(const VarValue& v) const;
+        bool  isArithmeticScalar(const VarValue& v) const;
+        bool  isCondScalar(const VarValue& v) const;
+
+        bool checkAssignable(const VarAttr& dst, ExprNode& src, const std::string& context);
+        bool checkAssignable(Type* dstType, bool dstTensor, const std::vector<int>& dstDims, ExprNode& src,
+            const std::string& context);
+
+        void registerFunctionSignature(FuncDeclStmt& node);
+        bool registerGlobalDeclaration(VarDeclStmt& node);
+        bool checkVarInit(VarDeclarator& decl, VarAttr& attr, bool isGlobal);
+        void flattenInitializer(InitDecl* init, const std::vector<int>& dims, Type* elem, VarAttr& attr,
+            size_t& cursor, bool isGlobal, const Node& loc);
+        void checkBranch(StmtNode* stmt);
+
+        VarAttr* lookupSymbol(FE::Sym::Entry* entry);
+
         // 这两个辅助函数用于对一元/二元表达式做类型推断与常量折叠（若可能）
         // Const Decl 的变量以及 LiteralExpr 节点中的字面量都可被视为编译期常量
         // 对单元表达式，若 isConstexpr 为 true，则返回的 Value 也为编译期常量

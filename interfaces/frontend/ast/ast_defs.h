@@ -9,7 +9,8 @@
 
 #define AST_TYPEGROUP_DECL  \
     X(BASIC, basic type, 0) \
-    X(POINTER, pointer type, 1)
+    X(POINTER, pointer type, 1) \
+    X(TENSOR, tensor type, 2)
 
 #define AST_BASETYPE_DECL                                                           \
     X(UNK, unknown type, 0)                                                         \
@@ -37,7 +38,8 @@
     X(BITAND, &, 14)            \
     X(AND, &&, 15)              \
     X(OR, ||, 16)               \
-    X(ASSIGN, =, 17)
+    X(ASSIGN, =, 17)            \
+    X(MATMUL, @, 18)
 
 namespace FE::AST
 {
@@ -110,11 +112,29 @@ namespace FE::AST
         PtrType(Type* t = nullptr) : base(t) {}
     };
 
+    // tensor 类型：元素的标量类型为 int/float，具体形状由声明中的维度决定。
+    // 形状不放在 Type 中，而是由 VarAttr/ExprValue 的 dims 字段携带，
+    // 同一个 TensorType 对象可被不同形状的张量复用。
+    struct TensorType : public Type
+    {
+        friend class TypeFactory;
+
+        Type* elem;
+
+        std::string toString() const override { return "tensor " + (elem ? elem->toString() : "unknown"); }
+        Type_t      getBaseType() const override { return elem ? elem->getBaseType() : Type_t::UNK; }
+        TypeGroup   getTypeGroup() const override { return TypeGroup::TENSOR; }
+
+      private:
+        TensorType(Type* e = nullptr) : elem(e) {}
+    };
+
     class TypeFactory
     {
       public:
         static Type* getBasicType(Type_t t = Type_t::UNK);
         static Type* getPtrType(Type* t = nullptr);
+        static Type* getTensorType(Type* elem = nullptr);
 
         static TypeFactory& getInstance()
         {
@@ -131,6 +151,8 @@ namespace FE::AST
         using PtrBase_t = Type*;
         using PtrType_t = Type*;
         static std::map<PtrBase_t, PtrType_t> ptrTypeMap;
+
+        static std::map<Type*, Type*> tensorTypeMap;
     };
 
     extern Type* voidType;
@@ -156,6 +178,13 @@ namespace FE::AST
             long long llValue;
             float     floatValue;
         };
+
+        // 数组/张量的形状信息。空 dims 表示标量。
+        // isTensor 为 true 时，type 表示元素类型，dims 表示张量各维大小；
+        // 数组（非 tensor）同样使用 dims，以便统一处理取址和初始化。
+        std::vector<int> dims;
+        bool             isTensor = false;
+        bool             isArray  = false;
 
         VarValue() : type(voidType), intValue(0) {}
         VarValue(bool v) : type(boolType), boolValue(v) {}
@@ -235,12 +264,47 @@ namespace FE::AST
         Type* type;
         int   scopeLevel;
 
-        std::vector<int>      arrayDims;
-        std::vector<VarValue> initList;
+        bool isTensor;
+        bool isParam;       // 函数形参
+        bool isGlobal;      // 全局变量
+        bool isFunction;    // 函数符号
+        bool isPointer;     // 形参数组/张量退化为指针
+        bool isInitialized; // 是否已有初始化信息
 
-        VarAttr() : isConstDecl(false), type(voidType), scopeLevel(-1), arrayDims(), initList() {}
+        // 数组/张量的维度。形参数组的第一维用 -1 表示由实参决定。
+        std::vector<int>      arrayDims;
+        std::vector<VarValue> initList;  // 按行主序展平后的初值
+
+        // 标量常量的编译期值（isConstDecl 为 true 且为标量时有效）
+        VarValue constValue;
+
+        VarAttr()
+            : isConstDecl(false),
+              type(voidType),
+              scopeLevel(-1),
+              isTensor(false),
+              isParam(false),
+              isGlobal(false),
+              isFunction(false),
+              isPointer(false),
+              isInitialized(false),
+              arrayDims(),
+              initList(),
+              constValue()
+        {}
         VarAttr(Type* t, bool isConst = false, int level = -1)
-            : isConstDecl(isConst), type(t), scopeLevel(level), arrayDims(), initList()
+            : isConstDecl(isConst),
+              type(t),
+              scopeLevel(level),
+              isTensor(false),
+              isParam(false),
+              isGlobal(false),
+              isFunction(false),
+              isPointer(false),
+              isInitialized(false),
+              arrayDims(),
+              initList(),
+              constValue()
         {}
     };
 
@@ -248,8 +312,11 @@ namespace FE::AST
     {
         Operator  op;
         ExprValue val;
+        bool      typeChecked;
 
-        NodeAttr(Operator o = Operator::UNK, const ExprValue& v = ExprValue()) : op(o), val(v) {}
+        NodeAttr(Operator o = Operator::UNK, const ExprValue& v = ExprValue())
+            : op(o), val(v), typeChecked(false)
+        {}
     };
 }  // namespace FE::AST
 

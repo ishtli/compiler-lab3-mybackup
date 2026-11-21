@@ -28,22 +28,6 @@ namespace FE::AST
         return res;
     }
 
-    bool ASTChecker::visit(VarDeclarator& node)
-    {
-        // TODO(Lab3-1): 实现变量声明器的语义检查
-        // 访问左值表达式，同步属性，处理初始化器（如果有）
-        (void)node;
-        TODO("Lab3-1: Implement VarDeclarator semantic checking");
-    }
-
-    bool ASTChecker::visit(ParamDeclarator& node)
-    {
-        // TODO(Lab3-1): 实现函数形参的语义检查
-        // 检查形参重定义，处理数组形参的类型退化，将形参加入符号表
-        (void)node;
-        TODO("Lab3-1: Implement ParamDeclarator semantic checking");
-    }
-
     bool ASTChecker::visit(VarDeclaration& node)
     {
         // TODO(Lab3-1): 实现变量声明的语义检查

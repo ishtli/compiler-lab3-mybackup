@@ -72,6 +72,9 @@ namespace FE::AST
         ExprNode* lval;
         InitDecl* init;
 
+        // 语义分析阶段填写的符号属性，供 IR 生成复用
+        VarAttr varAttr;
+
       public:
         VarDeclarator(ExprNode* lval, InitDecl* init = nullptr, int line_num = -1, int col_num = -1)
             : DeclNode(line_num, col_num), lval(lval), init(init)
@@ -88,6 +91,9 @@ namespace FE::AST
         Type*                   type;
         Entry*                  entry;
         std::vector<ExprNode*>* dims;
+
+        // 语义分析阶段填写：数组/张量形参的维度（第一维 -1 表示由实参决定）
+        VarAttr varAttr;
 
       public:
         ParamDeclarator(

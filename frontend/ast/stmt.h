@@ -43,6 +43,11 @@ namespace FE::AST
         std::vector<ParamDeclarator*>* params;
         StmtNode*                      body;
 
+        // tensor 返回值没有写在函数签名里，由语义分析从 return 语句推断
+        std::vector<int> retDims;
+        bool             retIsTensor    = false;
+        bool             retDimsKnown   = false;
+
       public:
         FuncDeclStmt(Type* retType, Entry* entry, std::vector<ParamDeclarator*>* params, StmtNode* body = nullptr,
             int line_num = -1, int col_num = -1)

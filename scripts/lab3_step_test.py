@@ -80,7 +80,26 @@ int main()
     require(result.returncode == 0, result.stderr)
 
 
-CHECKS = {"parser": parser, "symbols": symbols}
+def expect_semantic(work, name, source, error=None):
+    result, out = compile_case(work, name, source, "-ast")
+    if error is None:
+        require(result.returncode == 0 and out.stat().st_size, f"{name}: {result.stderr}")
+    else:
+        require(result.returncode != 0 and "Semantic check failed" in result.stderr
+                and error in result.stderr, f"{name}: expected {error!r}, got {result.stderr!r}")
+    return out
+
+
+def root(work):
+    expect_semantic(work, "main_ok", "int main(){ return 0; }")
+    expect_semantic(work, "missing_main", "int f(){ return 0; }", "main function is not defined")
+    expect_semantic(work, "bad_main", "void main(){}", "main must have signature")
+    expect_semantic(work, "global_stmt", "int x; x=2; int main(){return 0;}", "at global scope")
+    expect_semantic(work, "builtin_reserved", "int getint(){return 0;} int main(){return 0;}",
+                    "redefinition of function")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root}
 
 
 def main():

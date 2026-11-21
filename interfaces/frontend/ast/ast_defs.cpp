@@ -31,6 +31,7 @@ namespace FE::AST
 
     std::array<Type*, maxTypeIdx + 1>                        TypeFactory::baseTypes = {nullptr};
     std::map<TypeFactory::PtrBase_t, TypeFactory::PtrType_t> TypeFactory::ptrTypeMap;
+    std::map<Type*, Type*>                                   TypeFactory::tensorTypeMap;
 
     TypeFactory::TypeFactory()
     {
@@ -47,6 +48,13 @@ namespace FE::AST
 
     TypeFactory::~TypeFactory()
     {
+        for (auto& [k, v] : tensorTypeMap)
+        {
+            if (!v) continue;
+            delete v;
+            v = nullptr;
+        }
+        tensorTypeMap.clear();
         for (auto& [k, v] : ptrTypeMap)
         {
             if (!v) continue;
@@ -71,6 +79,15 @@ namespace FE::AST
         Type* ptype   = new PtrType(t);
         ptrTypeMap[t] = ptype;
         return ptype;
+    }
+    Type* TypeFactory::getTensorType(Type* elem)
+    {
+        if (!elem) return nullptr;
+        auto it = tensorTypeMap.find(elem);
+        if (it != tensorTypeMap.end()) return it->second;
+        Type* ttype       = new TensorType(elem);
+        tensorTypeMap[elem] = ttype;
+        return ttype;
     }
 
     TypeFactory& tf = TypeFactory::getInstance();
