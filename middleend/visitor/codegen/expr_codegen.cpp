@@ -63,12 +63,27 @@ namespace ME
     void ASTCodeGen::visit(FE::AST::UnaryExpr& node, Module* m)
     {
         if (!node.expr) return;
+        if (node.attr.val.value.isTensor)
+        {
+            emitTensorUnary(node, m);
+            return;
+        }
         handleUnaryCalc(*node.expr, node.op, curBlock, m);
     }
 
     void ASTCodeGen::handleAssign(FE::AST::LeftValExpr& lhs, FE::AST::ExprNode& rhs, Module* m)
     {
         size_t ptr = genLValuePtr(lhs, m);
+
+        // 张量整体赋值
+        if (lhs.attr.val.value.isTensor && (!lhs.indices || lhs.indices->empty()))
+        {
+            size_t src = genExpr(rhs, m);
+            int    total = 1;
+            for (int d : lhs.attr.val.value.dims) total *= d;
+            emitTensorAssign(ptr, src, convert(lhs.attr.val.value.type), total);
+            return;
+        }
 
         size_t rhsReg = genExpr(rhs, m);
         DataType dst  = convert(lhs.attr.val.value.type);
@@ -154,6 +169,12 @@ namespace ME
             handleLogicalOr(node, *node.lhs, *node.rhs, m);
             return;
         }
+        if (node.lhs->attr.val.value.isTensor || node.rhs->attr.val.value.isTensor)
+        {
+            emitTensorElementwise(node, m);
+            return;
+        }
+
         // 长加法链的迭代生成，避免左深 AST 造成递归爆栈。
         if (node.op == FE::AST::Operator::ADD && !node.attr.val.value.isTensor && !node.attr.val.value.isArray)
         {

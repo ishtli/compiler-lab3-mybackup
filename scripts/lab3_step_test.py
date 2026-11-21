@@ -257,7 +257,32 @@ int main(){ return 0; }
                     "must specify dimensions")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types}
+def tensor_elements(work):
+    expect_run(work, "tensor_elements", """
+tensor int a[3]={1,2};
+tensor int b[3]={4,6,8};
+int main(){
+  tensor int c[3]=a+b*2+1; tensor int d[3]=-c;
+  c=d; c[2]=17;
+  return c[0]+c[1]+c[2]+b[0];
+}
+""", 252)
+    expect_run(work, "tensor_float", """
+int main(){
+  tensor float a[2]={1.5,2.5}; tensor float b[2]=0.5+a/2.0;
+  putfloat(b[0]); putch(10); return 0;
+}
+""", 0, "0x1.4p+0\n")
+    expect_run(work, "tensor_div_and_mod", """
+int main(){
+  tensor int a[2]={3,5}; tensor int b[2]={8,11};
+  tensor int d[2]=b/a; tensor int r[2]=b%a;
+  return d[0]+d[1]+r[0]+r[1];
+}
+""", 7)
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types, "tensor_elements": tensor_elements}
 
 
 def main():

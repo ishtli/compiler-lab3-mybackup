@@ -185,9 +185,18 @@ namespace ME
 
             if (d->init)
             {
-                emitZeroInit(baseElem, dt, total);
-                size_t cursor = 0;
-                emitArrayInit(d->init, attr.arrayDims, dt, baseElem, cursor, static_cast<size_t>(total), m);
+                if (auto* init = dynamic_cast<FE::AST::Initializer*>(d->init))
+                {
+                    // tensor 表达式初始化
+                    size_t src = genExpr(*init->init_val, m);
+                    emitTensorAssign(baseElem, src, dt, total);
+                }
+                else
+                {
+                    emitZeroInit(baseElem, dt, total);
+                    size_t cursor = 0;
+                    emitArrayInit(d->init, attr.arrayDims, dt, baseElem, cursor, static_cast<size_t>(total), m);
+                }
             }
         }
     }
