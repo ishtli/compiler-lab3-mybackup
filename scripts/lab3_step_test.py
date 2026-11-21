@@ -9,9 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 COMPILER = ROOT / "bin/compiler"
 
 
-def run(*args, **kwargs):
+def run(*args, timeout=30, **kwargs):
     return subprocess.run(
-        list(map(str, args)), cwd=ROOT, capture_output=True, text=True, timeout=30, **kwargs
+        list(map(str, args)), cwd=ROOT, capture_output=True, text=True, timeout=timeout, **kwargs
     )
 
 
@@ -133,7 +133,38 @@ def semantic(work):
     expect_semantic(work, "condition", "int main(){if(putint(1)) return 1; return 0;}", "condition")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic}
+def llvm_tool(name):
+    import shutil
+    found = shutil.which(f"{name}-15") or shutil.which(name)
+    require(found is not None, f"missing tool: {name}")
+    return found
+
+
+def expect_run(work, name, source, code=0, stdout=""):
+    result, ir = compile_case(work, name, source)
+    require(result.returncode == 0, f"{name}: {result.stderr}")
+    result = run(llvm_tool("llvm-as"), ir, "-o", "/dev/null")
+    require(result.returncode == 0, f"{name}: {result.stderr}")
+    binary = work / name
+    result = run(llvm_tool("clang"), "-x", "ir", ir, "-Wno-override-module",
+                 "-static", "-L" + str(ROOT / "lib"), "-lsysy_x86", "-o", binary)
+    require(result.returncode == 0, f"{name}: {result.stderr}")
+    result = run(binary)
+    require((result.returncode, result.stdout) == (code, stdout),
+            f"{name}: exit {result.returncode}, stdout {result.stdout!r}, stderr {result.stderr!r}")
+    return ir
+
+
+def scalar_ir(work):
+    expect_run(work, "scalar", """
+int g=4;
+int f(int x, int y) { int a=x*y; a=a+g; return a/2; }
+int main(){ int x=f(6,5); putint(x); putch(10); return x; }
+""", 17, "17\n")
+    expect_run(work, "scalar_bool", "int main(){int a=5; return a+!a;}", 5)
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir}
 
 
 def main():

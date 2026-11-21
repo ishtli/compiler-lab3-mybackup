@@ -49,6 +49,11 @@ namespace ME
         const std::map<FE::Sym::Entry*, FE::AST::FuncDeclStmt*>& funcDecls;
         Function*                                                curFunc;
         Block*                                                   curBlock;
+        Block*                                                   entryBlock;
+        DataType                                                 curRetType;
+        bool                                                     curRetTensor;
+        size_t                                                   curSretReg;
+        std::vector<std::pair<size_t, size_t>>                   loopStack;  // (continue, break)
         class RegTab
         {
           public:
@@ -108,6 +113,11 @@ namespace ME
               funcDecls(funcDecls),
               curFunc(nullptr),
               curBlock(nullptr),
+              entryBlock(nullptr),
+              curRetType(DataType::VOID),
+              curRetTensor(false),
+              curSretReg(0),
+              loopStack(),
               name2reg(),
               reg2attr(),
               paramPtrTab(),
@@ -164,7 +174,32 @@ namespace ME
         size_t getMaxReg() { return curFunc->getMaxReg(); }
         size_t getMaxLabel() { return curFunc->getMaxLabel(); }
         size_t getNewRegId() { return curFunc->getNewRegId(); }
-        void   insert(Instruction* inst) { curBlock->insertBack(inst); }
+        void   insert(Instruction* inst);
+        bool   currentBlockTerminated() const;
+        void   ensureOpenBlock();
+        void   finishBlockWithDefaultRet(Block* block);
+        void   finishFunction();
+
+        size_t newEntryAlloca(DataType t, const std::vector<int>& dims = {});
+        size_t genExpr(FE::AST::ExprNode& node, Module* m);
+        size_t genBool(FE::AST::ExprNode& node, Module* m);
+        size_t genLValuePtr(FE::AST::LeftValExpr& node, Module* m);
+        size_t toBoolReg(size_t reg, DataType dt);
+
+        bool getSymbolAttr(FE::Sym::Entry* entry, FE::AST::VarAttr& attr, bool& isGlobal, Operand*& base);
+        size_t materializeElementPtr(Operand* base, const FE::AST::VarAttr& attr, bool isGlobal);
+        size_t emitElementPtr(size_t baseReg, DataType elem, size_t offsetReg);
+        size_t emitElementPtrImme(size_t baseReg, DataType elem, int offset);
+        size_t genIndexOffset(
+            const std::vector<int>& dims, const std::vector<size_t>& idxRegs, const std::vector<int>& constVals);
+
+        void emitZeroInit(size_t baseReg, DataType elem, int total);
+        void emitArrayInit(FE::AST::InitDecl* init, const std::vector<int>& dims, DataType elem,
+            size_t baseReg, size_t& cursor, size_t boundary, Module* m);
+        void emitTensorAssign(size_t dstReg, size_t srcReg, DataType elem, int total);
+        void emitTensorUnary(FE::AST::UnaryExpr& node, Module* m);
+        void emitTensorElementwise(FE::AST::BinaryExpr& node, Module* m);
+        void emitTensorMatMul(FE::AST::BinaryExpr& node, Module* m);
 
       private:
         DataType convert(FE::AST::Type* at);

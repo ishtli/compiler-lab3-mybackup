@@ -220,9 +220,7 @@ namespace ME
             {FE::AST::Operator::NOT, UnaryOperators::notFloat},
         };
 
-        apply(*this, node, m);
-        size_t srcReg = getMaxReg();
-
+        size_t   srcReg  = genExpr(node, m);
         DataType srcType = convert(node.attr.val.value.type);
 
         if (srcType == DataType::I1)
@@ -286,10 +284,8 @@ namespace ME
             {FE::AST::Operator::NEQ, BinaryOperators::neqFloat},
         };
 
-        apply(*this, lhs, m);
-        size_t lhsReg = getMaxReg();
-        apply(*this, rhs, m);
-        size_t rhsReg = getMaxReg();
+        size_t lhsReg = genExpr(lhs, m);
+        size_t rhsReg = genExpr(rhs, m);
 
         DataType lhsType = convert(lhs.attr.val.value.type);
         DataType rhsType = convert(rhs.attr.val.value.type);
@@ -297,25 +293,15 @@ namespace ME
         ASSERT(rhsType == DataType::I1 || rhsType == DataType::I32 || rhsType == DataType::F32);
         DataType pType = promoteType(lhsType, rhsType);
 
-        if (pType == DataType::I1)
-        {
-            auto lhsConvInsts = createTypeConvertInst(pType, DataType::I32, lhsReg);
-            for (auto& inst : lhsConvInsts) block->insert(inst);
-            lhsReg = getMaxReg();
+        if (pType == DataType::I1) pType = DataType::I32;
 
-            auto rhsConvInsts = createTypeConvertInst(pType, DataType::I32, rhsReg);
-            for (auto& inst : rhsConvInsts) block->insert(inst);
-            rhsReg = getMaxReg();
-
-            pType = DataType::I32;
-        }
-        else if (lhsType != pType)
+        if (lhsType != pType)
         {
             auto convInsts = createTypeConvertInst(lhsType, pType, lhsReg);
             for (auto& inst : convInsts) block->insert(inst);
             lhsReg = getMaxReg();
         }
-        else if (rhsType != pType)
+        if (rhsType != pType)
         {
             auto convInsts = createTypeConvertInst(rhsType, pType, rhsReg);
             for (auto& inst : convInsts) block->insert(inst);

@@ -1,5 +1,8 @@
 #include <middleend/visitor/codegen/ast_codegen.h>
 #include <debug.h>
+#include <numeric>
+#include <functional>
+#include <algorithm>
 
 namespace ME
 {
@@ -26,9 +29,47 @@ namespace ME
 
     void ASTCodeGen::visit(FE::AST::VarDeclaration& node, Module* m)
     {
-        // TODO(Lab 3-2): 生成变量声明 IR（alloca、数组零初始化、可选初始化表达式）
-        (void)node;
-        (void)m;
-        TODO("Lab3-2: Implement VarDeclaration IR generation");
+        if (!node.decls) return;
+        for (FE::AST::VarDeclarator* d : *node.decls)
+        {
+            if (!d) continue;
+            auto* lv = dynamic_cast<FE::AST::LeftValExpr*>(d->lval);
+            if (!lv || !lv->entry) continue;
+
+            FE::AST::VarAttr attr = d->varAttr;
+            if (attr.type == FE::AST::voidType)
+            {
+                attr.type     = node.type;
+                attr.isTensor = node.type && node.type->getTypeGroup() == FE::AST::TypeGroup::TENSOR;
+                if (attr.isTensor) attr.type = static_cast<FE::AST::TensorType*>(node.type)->elem;
+            }
+
+            DataType dt = convert(attr.type);
+            size_t   ptrReg = newEntryAlloca(dt, attr.arrayDims);
+            name2reg.addSymbol(lv->entry, ptrReg);
+            reg2attr[ptrReg] = attr;
+
+            if (attr.arrayDims.empty())
+            {
+                if (d->init)
+                {
+                    if (auto* init = dynamic_cast<FE::AST::Initializer*>(d->init))
+                    {
+                        size_t   reg  = genExpr(*init->init_val, m);
+                        DataType have = convert(init->init_val->attr.val.value.type);
+                        if (have != dt)
+                        {
+                            auto conv = createTypeConvertInst(have, dt, reg);
+                            for (auto& inst : conv) insert(inst);
+                            reg = getMaxReg();
+                        }
+                        insert(createStoreInst(dt, reg, getRegOperand(ptrReg)));
+                    }
+                }
+                continue;
+            }
+
+            if (d->init) ERROR("Array initializer lowering has not been implemented");
+        }
     }
 }  // namespace ME
