@@ -537,7 +537,12 @@ namespace FE::AST
 
             if (desiredDepth >= dims.size())
             {
-                // 过量嵌套：找到第一个可用于初始化的标量
+                if (attr.isTensor)
+                {
+                    reportError("tensor initializer nesting exceeds its rank", *list);
+                    return;
+                }
+                // 沿用普通数组对标量外层花括号的兼容处理。
                 for (InitDecl* child : *list->init_list)
                 {
                     if (!child) continue;

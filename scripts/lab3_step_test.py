@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run checks for successive Lab3 milestones from a built compiler."""
 import argparse
+import resource
+import signal
 from pathlib import Path
 import subprocess
 import tempfile
@@ -349,10 +351,35 @@ int main(){ return 0; }
 """, "inconsistent tensor return shape")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types, "tensor_elements": tensor_elements, "tensor_matmul": tensor_matmul, "tensor_calls": tensor_calls}
+def acceptance(work):
+    fixtures = ROOT / "lab3"
+    examples = {
+        "tensor_basic": "21 24 27 30\n5 12 21 32\n1 2 0 1\n6 8 10 12\n36\n58 64 139 154\n",
+        "tensor_ops": "4 4 4 4\n0x1p-1 0x1.2p+2 0x1p-1\n19 22 43 50\n",
+        "tensor_param": "21\n",
+    }
+    for name, stdout in examples.items():
+        expect_run(work, name, (fixtures / f"{name}.sy").read_text(), stdout=stdout)
+    expect_semantic(work, "tensor_error", (fixtures / "tensor_error.sy").read_text(),
+                    "tensor shapes/types must match")
+    expect_semantic(work, "over_nested_tensor", """
+int main(){ tensor int a[1]={{{1,2}}}; return a[0]; }
+""", "nesting exceeds its rank")
+    expect_run(work, "dynamic_shape_mismatch", """
+void add_into(tensor int a[], tensor int b[]) { a=a+b; }
+int main(){
+  tensor int a[2]={1,2}; tensor int b[3]={1,2,3};
+  add_into(a,b);
+  return 0;
+}
+""", -signal.SIGILL)
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic, "arrays": arrays, "advanced": advanced, "tensor_parser": tensor_parser, "tensor_types": tensor_types, "tensor_elements": tensor_elements, "tensor_matmul": tensor_matmul, "tensor_calls": tensor_calls, "acceptance": acceptance}
 
 
 def main():
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("part", nargs="?", default="all", choices=[*CHECKS, "all"])
     args = cli.parse_args()
