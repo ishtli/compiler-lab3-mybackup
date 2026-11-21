@@ -138,41 +138,104 @@ namespace ME
 
     void ASTCodeGen::visit(FE::AST::WhileStmt& node, Module* m)
     {
-        // TODO(Lab 3-2): 生成 while 循环 IR（条件块、循环体与结束块、循环标签）
-        (void)node;
-        (void)m;
-        TODO("Lab3-2: Implement WhileStmt IR generation");
+        Block* condBB = createBlock();
+        Block* bodyBB = createBlock();
+        Block* endBB  = createBlock();
+
+        insert(createBranchInst(condBB->blockId));
+        curBlock = condBB;
+        if (node.cond)
+        {
+            size_t cond = genBool(*node.cond, m);
+            insert(createBranchInst(cond, bodyBB->blockId, endBB->blockId));
+        }
+        else
+        {
+            insert(createBranchInst(bodyBB->blockId));
+        }
+
+        curBlock = bodyBB;
+        loopStack.push_back({condBB->blockId, endBB->blockId});
+        if (node.body) apply(*this, *node.body, m);
+        loopStack.pop_back();
+        if (!currentBlockTerminated()) insert(createBranchInst(condBB->blockId));
+
+        curBlock = endBB;
     }
 
     void ASTCodeGen::visit(FE::AST::IfStmt& node, Module* m)
     {
-        // TODO(Lab 3-2): 生成 if/else IR（then/else/end 基本块与条件分支）
-        (void)node;
-        (void)m;
-        TODO("Lab3-2: Implement IfStmt IR generation");
+        size_t cond = node.cond ? genBool(*node.cond, m) : 1;
+        Block* thenBB = createBlock();
+        Block* elseBB = createBlock();
+        Block* endBB  = createBlock();
+
+        if (node.cond)
+            insert(createBranchInst(cond, thenBB->blockId, elseBB->blockId));
+        else
+            insert(createBranchInst(thenBB->blockId));
+
+        curBlock = thenBB;
+        if (node.thenStmt) apply(*this, *node.thenStmt, m);
+        if (!currentBlockTerminated()) insert(createBranchInst(endBB->blockId));
+
+        curBlock = elseBB;
+        if (node.elseStmt) apply(*this, *node.elseStmt, m);
+        if (!currentBlockTerminated()) insert(createBranchInst(endBB->blockId));
+
+        curBlock = endBB;
     }
 
     void ASTCodeGen::visit(FE::AST::BreakStmt& node, Module* m)
     {
-        // TODO(Lab 3-2): 生成 break 的无条件跳转至循环结束块
         (void)node;
         (void)m;
-        TODO("Lab3-2: Implement BreakStmt IR generation");
+        if (loopStack.empty()) ERROR("break outside loop");
+        insert(createBranchInst(loopStack.back().second));
     }
 
     void ASTCodeGen::visit(FE::AST::ContinueStmt& node, Module* m)
     {
-        // TODO(Lab 3-2): 生成 continue 的无条件跳转至循环步进/条件块
         (void)node;
         (void)m;
-        TODO("Lab3-2: Implement ContinueStmt IR generation");
+        if (loopStack.empty()) ERROR("continue outside loop");
+        insert(createBranchInst(loopStack.back().first));
     }
 
     void ASTCodeGen::visit(FE::AST::ForStmt& node, Module* m)
     {
-        // TODO(Lab 3-2): 生成 for 循环 IR（init/cond/body/step 基本块与循环标签）
-        (void)node;
-        (void)m;
-        TODO("Lab3-2: Implement ForStmt IR generation");
+        name2reg.enterScope();
+        if (node.init) apply(*this, *node.init, m);
+
+        Block* condBB = createBlock();
+        Block* bodyBB = createBlock();
+        Block* stepBB = createBlock();
+        Block* endBB  = createBlock();
+
+        insert(createBranchInst(condBB->blockId));
+
+        curBlock = condBB;
+        if (node.cond)
+        {
+            size_t cond = genBool(*node.cond, m);
+            insert(createBranchInst(cond, bodyBB->blockId, endBB->blockId));
+        }
+        else
+        {
+            insert(createBranchInst(bodyBB->blockId));
+        }
+
+        curBlock = bodyBB;
+        loopStack.push_back({stepBB->blockId, endBB->blockId});
+        if (node.body) apply(*this, *node.body, m);
+        loopStack.pop_back();
+        if (!currentBlockTerminated()) insert(createBranchInst(stepBB->blockId));
+
+        curBlock = stepBB;
+        if (node.step) apply(*this, *node.step, m);
+        if (!currentBlockTerminated()) insert(createBranchInst(condBB->blockId));
+
+        curBlock = endBB;
+        name2reg.exitScope();
     }
 }  // namespace ME

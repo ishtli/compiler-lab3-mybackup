@@ -72,6 +72,56 @@ namespace ME
         insert(createStoreInst(dst, rhsReg, getRegOperand(ptr)));
     }
 
+    void ASTCodeGen::handleLogicalAnd(
+        FE::AST::BinaryExpr& node, FE::AST::ExprNode& lhs, FE::AST::ExprNode& rhs, Module* m)
+    {
+        (void)node;
+        size_t tmpPtr = newEntryAlloca(DataType::I1);
+        size_t lhsReg = genBool(lhs, m);
+        Block* rhsBB  = createBlock();
+        Block* falseBB = createBlock();
+        Block* endBB  = createBlock();
+
+        insert(createBranchInst(lhsReg, rhsBB->blockId, falseBB->blockId));
+        curBlock = falseBB;
+        insert(createStoreInst(DataType::I1, getImmeI32Operand(0), getRegOperand(tmpPtr)));
+        insert(createBranchInst(endBB->blockId));
+
+        curBlock      = rhsBB;
+        size_t rhsReg = genBool(rhs, m);
+        insert(createStoreInst(DataType::I1, rhsReg, getRegOperand(tmpPtr)));
+        insert(createBranchInst(endBB->blockId));
+
+        curBlock     = endBB;
+        size_t res   = getNewRegId();
+        insert(createLoadInst(DataType::I1, getRegOperand(tmpPtr), res));
+    }
+
+    void ASTCodeGen::handleLogicalOr(
+        FE::AST::BinaryExpr& node, FE::AST::ExprNode& lhs, FE::AST::ExprNode& rhs, Module* m)
+    {
+        (void)node;
+        size_t tmpPtr  = newEntryAlloca(DataType::I1);
+        size_t lhsReg  = genBool(lhs, m);
+        Block* trueBB  = createBlock();
+        Block* rhsBB   = createBlock();
+        Block* endBB   = createBlock();
+
+        insert(createBranchInst(lhsReg, trueBB->blockId, rhsBB->blockId));
+        curBlock = trueBB;
+        insert(createStoreInst(DataType::I1, getImmeI32Operand(1), getRegOperand(tmpPtr)));
+        insert(createBranchInst(endBB->blockId));
+
+        curBlock      = rhsBB;
+        size_t rhsReg = genBool(rhs, m);
+        insert(createStoreInst(DataType::I1, rhsReg, getRegOperand(tmpPtr)));
+        insert(createBranchInst(endBB->blockId));
+
+        curBlock   = endBB;
+        size_t res = getNewRegId();
+        insert(createLoadInst(DataType::I1, getRegOperand(tmpPtr), res));
+    }
+
     void ASTCodeGen::visit(FE::AST::BinaryExpr& node, Module* m)
     {
         if (!node.lhs || !node.rhs) return;
@@ -84,6 +134,16 @@ namespace ME
             return;
         }
 
+        if (node.op == FE::AST::Operator::AND)
+        {
+            handleLogicalAnd(node, *node.lhs, *node.rhs, m);
+            return;
+        }
+        if (node.op == FE::AST::Operator::OR)
+        {
+            handleLogicalOr(node, *node.lhs, *node.rhs, m);
+            return;
+        }
         // 长加法链的迭代生成，避免左深 AST 造成递归爆栈。
         if (node.op == FE::AST::Operator::ADD && !node.attr.val.value.isTensor && !node.attr.val.value.isArray)
         {

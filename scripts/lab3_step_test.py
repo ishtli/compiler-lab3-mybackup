@@ -164,7 +164,33 @@ int main(){ int x=f(6,5); putint(x); putch(10); return x; }
     expect_run(work, "scalar_bool", "int main(){int a=5; return a+!a;}", 5)
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir}
+def run_group(work, group):
+    import os
+    tools = work / "llvm-tools"
+    tools.mkdir(exist_ok=True)
+    for name in ("clang", "llvm-as"):
+        alias = tools / name
+        if not alias.exists():
+            alias.symlink_to(llvm_tool(name))
+    env = dict(os.environ, PATH=str(tools) + os.pathsep + os.environ["PATH"])
+    result = run("python3", ROOT / "test.py", "--group", group,
+                 "--stage", "llvm", "--opt", "0", env=env, timeout=240)
+    require(result.returncode == 0 and "Passed: 100 / 100" in result.stdout,
+            f"{group}: {result.stdout[-14000:]} {result.stderr}")
+    print(f"{group} LLVM -O0: 100/100")
+
+
+def basic(work):
+    expect_run(work, "control", """
+int bump(){ putint(9); return 1; }
+int main(){ int i=0; int s=0;
+  while(i<5){ i=i+1; if(i==2) continue; if(i==4) break; s=s+i; }
+  if(0&&bump()) return 1; if(1||bump()) return s; return 0;
+}""", 4)
+    run_group(work, "Basic")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions, "semantic": semantic, "scalar_ir": scalar_ir, "basic": basic}
 
 
 def main():
