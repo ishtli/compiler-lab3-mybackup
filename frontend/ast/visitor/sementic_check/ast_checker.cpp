@@ -618,6 +618,13 @@ namespace FE::AST
             }
         }
 
+        if (node.getStmts())
+        {
+            for (StmtNode* stmt : *node.getStmts())
+            {
+                if (auto* fn = dynamic_cast<FuncDeclStmt*>(stmt)) apply(*this, *fn);
+            }
+        }
         if (!mainExists) reportErrorAt("main function is not defined", -1);
         return errors.empty();
     }

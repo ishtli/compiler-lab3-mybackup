@@ -5,42 +5,142 @@ namespace FE::AST
 {
     bool ASTChecker::visit(ExprStmt& node)
     {
-        // 示例实现：表达式语句的语义检查
-        // 空表达式直接通过，否则访问内部表达式
         if (!node.expr) return true;
         return apply(*this, *node.expr);
     }
 
     bool ASTChecker::visit(FuncDeclStmt& node)
     {
-        // TODO(Lab3-1): 实现函数声明的语义检查
-        // 检查作用域，记录函数信息，处理形参和函数体，检查返回语句
-        (void)node;
-        TODO("Lab3-1: Implement FuncDeclStmt semantic checking");
+        if (!node.body) return true;
+
+        FuncDeclStmt* oldFunc    = curFuncDecl;
+        Type*         oldRetType = curFuncRetType;
+        bool          oldIsTens  = curFuncRetIsTensor;
+        bool          oldHasRet  = funcHasReturn;
+
+        curFuncDecl        = &node;
+        curFuncRetType     = elementType(node.retType);
+        curFuncRetIsTensor = isTensorType(node.retType);
+        funcHasReturn      = false;
+        node.retIsTensor   = curFuncRetIsTensor;
+
+        symTable.enterScope();
+
+        if (node.params)
+        {
+            for (ParamDeclarator* p : *node.params)
+            {
+                if (!p || !p->entry) continue;
+                VarAttr pa = p->varAttr;
+                if (!pa.type) pa.type = elementType(p->type);
+                pa.isParam    = true;
+                pa.scopeLevel = symTable.getScopeDepth();
+                if (symTable.hasSymbolInCurrentScope(p->entry))
+                {
+                    reportError("duplicate parameter '" + p->entry->getName() + "'", *p);
+                }
+                else
+                {
+                    symTable.addSymbol(p->entry, pa);
+                }
+            }
+        }
+
+        bool ok = apply(*this, *node.body);
+
+        symTable.exitScope();
+
+        curFuncDecl        = oldFunc;
+        curFuncRetType     = oldRetType;
+        curFuncRetIsTensor = oldIsTens;
+        funcHasReturn      = oldHasRet;
+        return ok;
     }
 
     bool ASTChecker::visit(VarDeclStmt& node)
     {
-        // TODO(Lab3-1): 实现变量声明语句的语义检查
-        // 空声明直接通过，否则委托给变量声明处理
-        (void)node;
-        TODO("Lab3-1: Implement VarDeclStmt semantic checking");
+        if (!node.decl) return true;
+        if (symTable.isGlobalScope())
+        {
+            // 全局变量已在 Root 的预扫描阶段检查
+            return true;
+        }
+        return apply(*this, *node.decl);
     }
 
     bool ASTChecker::visit(BlockStmt& node)
     {
-        // TODO(Lab3-1): 实现块语句的语义检查
-        // 进入新作用域，逐条访问语句，退出作用域
-        (void)node;
-        TODO("Lab3-1: Implement BlockStmt semantic checking");
+        symTable.enterScope();
+        bool ok = true;
+        if (node.stmts)
+        {
+            for (StmtNode* stmt : *node.stmts)
+            {
+                if (!stmt) continue;
+                ok &= apply(*this, *stmt);
+            }
+        }
+        symTable.exitScope();
+        return ok;
     }
 
     bool ASTChecker::visit(ReturnStmt& node)
     {
-        // TODO(Lab3-1): 实现返回语句的语义检查
-        // 设置返回标记，检查作用域，检查返回值类型匹配
-        (void)node;
-        TODO("Lab3-1: Implement ReturnStmt semantic checking");
+        funcHasReturn = true;
+        if (!curFuncDecl)
+        {
+            reportError("return statement outside function", node);
+            return false;
+        }
+
+        bool retVoid = curFuncRetType == voidType && !curFuncRetIsTensor;
+        if (retVoid)
+        {
+            if (node.retExpr)
+            {
+                reportError("void function should not return a value", node);
+                apply(*this, *node.retExpr);
+                return false;
+            }
+            return true;
+        }
+
+        if (!node.retExpr)
+        {
+            reportError("non-void function should return a value", node);
+            return false;
+        }
+
+        if (!apply(*this, *node.retExpr)) return false;
+
+        const VarValue& v = node.retExpr->attr.val.value;
+        if (curFuncRetIsTensor)
+        {
+            if (!v.isTensor)
+            {
+                reportError("tensor-returning function must return a tensor", *node.retExpr);
+                return false;
+            }
+            if (v.type->getBaseType() != curFuncRetType->getBaseType())
+            {
+                reportError("returned tensor element type does not match function return type", *node.retExpr);
+                return false;
+            }
+            if (!curFuncDecl->retDimsKnown)
+            {
+                curFuncDecl->retDims      = v.dims;
+                curFuncDecl->retDimsKnown = true;
+                curFuncDecl->retIsTensor  = true;
+            }
+            else if (curFuncDecl->retDims != v.dims)
+            {
+                reportError("inconsistent tensor return shape", *node.retExpr);
+                return false;
+            }
+            return true;
+        }
+
+        return checkAssignable(curFuncRetType, false, {}, *node.retExpr, "return statement");
     }
 
     bool ASTChecker::visit(WhileStmt& node)

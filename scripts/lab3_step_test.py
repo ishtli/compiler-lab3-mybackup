@@ -109,7 +109,18 @@ def declarations(work):
                     "int a[2][2]={{1,2,3},{4}}; int main(){return 0;}", "too many initializers")
 
 
-CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations}
+def expressions(work):
+    expect_semantic(work, "fold_and_call",
+                    "const int n=1+2; int a[n]; int main(){float x=2; putint(a[0]+x); return !x;}")
+    expect_semantic(work, "divide_zero", "int main(){int a=getint(); return a/(2-2);}", "division by zero")
+    expect_semantic(work, "undefined", "int main(){return absent;}", "undeclared identifier")
+    expect_semantic(work, "call_shape",
+                    "int f(int a[][2]){return a[0][0];} int main(){int a[3][4]; return f(a);}",
+                    "incompatible shape")
+    expect_semantic(work, "const_assign", "int main(){const int a=1; a=2; return a;}", "const")
+
+
+CHECKS = {"parser": parser, "symbols": symbols, "root": root, "declarations": declarations, "expressions": expressions}
 
 
 def main():
